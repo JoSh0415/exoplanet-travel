@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { corsHeaders } from "./cors";
 
 export function jsonError(
   status: number,
@@ -14,6 +15,6 @@ export function jsonError(
         details,
       },
     },
-    { status }
+    { status, headers: corsHeaders }
   );
 }

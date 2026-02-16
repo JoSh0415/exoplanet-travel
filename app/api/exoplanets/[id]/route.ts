@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { jsonError } from "../../../lib/http";
+import { corsHeaders } from "@/app/lib/cors";
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders });
+}
 
 export async function GET(
   _req: NextRequest,
@@ -29,5 +34,5 @@ export async function GET(
     return jsonError(404, "NOT_FOUND", "Exoplanet not found");
   }
 
-  return NextResponse.json(planet);
+  return NextResponse.json(planet, { headers: corsHeaders });
 }
