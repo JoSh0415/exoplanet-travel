@@ -1,0 +1,36 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Exoplanet {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  distance        Float
+  temperature     Float?
+  gravity         Float?
+  vibe            String?
+  discoveryYear   Int?
+  bookings        Booking[]
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  bookings  Booking[]
+}
+
+model Booking {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  planetId      String
+  planet        Exoplanet @relation(fields: [planetId], references: [id])
+  travelClass   String
+  bookingDate   DateTime  @default(now())
+}
