@@ -30,7 +30,7 @@ interface ProcessedPlanet {
 }
 
 function calculateGravity(mass: number | null, radius: number | null): number | null {
-    if (!mass || !radius) return null;
+    if (mass == null || radius == null) return null;
     const g = mass / Math.pow(radius, 2);
     return parseFloat(g.toFixed(2));
 }
@@ -54,9 +54,13 @@ function determineVibe(tempKelvin: number | null, radius: number | null): string
     return "Barren Wasteland";
 }
 
-async function fetchAndNormalizePlanets(): Promise<ProcessedPlanet[]> {
-    console.log('🚀 Fetching data from NASA...');
-    
+function toNumberOrNull(value: string) {
+    if (!value || value.trim() === '') return null;
+    const num = parseFloat(value);
+    return isNaN(num) ? null : num;
+}
+
+async function fetchAndNormalizePlanets(): Promise<ProcessedPlanet[]> {    
     const query = "select pl_name,sy_dist,pl_eqt,pl_masse,pl_rade,disc_year from ps where default_flag=1 and sy_dist is not null and pl_rade is not null order by sy_dist asc";
     const url = `https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=${encodeURIComponent(query)}&format=csv`;
 
@@ -68,13 +72,14 @@ async function fetchAndNormalizePlanets(): Promise<ProcessedPlanet[]> {
             skip_empty_lines: true,
             trim: true,
         });
+        
+        const limit = Number(process.env.SEED_PLANET_LIMIT ?? 500);
+        const selected = records.slice(0, limit);
 
-        const top50 = records.slice(0, 50);
-
-        return top50.map((record) => {
-            const mass = parseFloat(record.pl_masse) || null;
-            const radius = parseFloat(record.pl_rade) || null;
-            const temp = parseFloat(record.pl_eqt) || null;
+        return selected.map((record) => {
+            const mass = toNumberOrNull(record.pl_masse);
+            const radius = toNumberOrNull(record.pl_rade);
+            const temp = toNumberOrNull(record.pl_eqt);
             const distParsecs = parseFloat(record.sy_dist);
 
             return {
@@ -88,15 +93,15 @@ async function fetchAndNormalizePlanets(): Promise<ProcessedPlanet[]> {
         });
 
     } catch (error) {
-        console.error("❌ Error fetching NASA data:", error);
+        console.error("Error fetching data:", error);
         return [];
     }
 }
 
 async function main() {
-    console.log('🌱 Starting Seed...');
+    console.log('Starting Seed');
 
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV != "production") {
         await prisma.booking.deleteMany();
         await prisma.user.deleteMany();
         await prisma.exoplanet.deleteMany();
@@ -105,7 +110,7 @@ async function main() {
     const planetsData = await fetchAndNormalizePlanets();
     
     if (planetsData.length === 0) {
-        console.warn("⚠️ No planets fetched. Check API connection.");
+        console.warn("No planets fetched.");
         return;
     }
 
@@ -113,7 +118,6 @@ async function main() {
         data: planetsData,
         skipDuplicates: true, 
     });
-    console.log(`🌌 Created ${planetsData.length} exoplanets.`);
 
     const user1 = await prisma.user.create({
         data: {
@@ -128,34 +132,31 @@ async function main() {
             name: 'Ellen Ripley',
         },
     });
-    console.log(`👤 Created users: ${user1.name} & ${user2.name}`);
 
-    const proxima = await prisma.exoplanet.findFirst({ where: { name: { contains: 'LTT 1445 A b' } } });
-    const trappist = await prisma.exoplanet.findFirst({ where: { name: { contains: 'Gliese 12 b' } } });
+    const hellscape = await prisma.exoplanet.findFirst({ where: { vibe: { contains: 'Literal Hellscape' } } });
+    const paradise = await prisma.exoplanet.findFirst({ where: { vibe: { contains: 'Habitable Paradise' } } });
 
-    if (proxima) {
+    if (hellscape) {
         await prisma.booking.create({
             data: {
                 userId: user1.id,
-                planetId: proxima.id,
+                planetId: hellscape.id,
                 travelClass: 'Economy (Cryo-Sleep)',
             },
         });
-        console.log(`🎫 Booked trip for Peter to ${proxima.name}`);
     }
 
-    if (trappist) {
+    if (paradise) {
         await prisma.booking.create({
             data: {
                 userId: user2.id,
-                planetId: trappist.id,
+                planetId: paradise.id,
                 travelClass: 'First Class (Warp Drive)',
             },
         });
-        console.log(`🎫 Booked trip for Ripley to ${trappist.name}`);
     }
 
-    console.log('✅ Seeding completed successfully.');
+    console.log('Seeding completed successfully.');
 }
 
 main()
