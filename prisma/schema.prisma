@@ -32,5 +32,9 @@ model Booking {
   planetId      String
   planet        Exoplanet @relation(fields: [planetId], references: [id])
   travelClass   String
+  status        String    @default("CONFIRMED")
   bookingDate   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([planetId])
 }
