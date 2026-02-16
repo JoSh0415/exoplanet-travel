@@ -6,7 +6,6 @@ import { jsonError } from "../../lib/http";
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
 
-  // Convert URLSearchParams -> plain object
   const queryObj = Object.fromEntries(url.searchParams.entries());
 
   const parsed = exoplanetsQuerySchema.safeParse(queryObj);
@@ -17,7 +16,6 @@ export async function GET(req: NextRequest) {
   const { page, pageSize, q, vibe, minDistance, maxDistance, sort, order } =
     parsed.data;
 
-  // Build Prisma "where" clause
   const where: any = {};
 
   if (q) {
@@ -37,7 +35,6 @@ export async function GET(req: NextRequest) {
   const skip = (page - 1) * pageSize;
   const take = pageSize;
 
-  // Run count + page query in a transaction
   const [total, items] = await prisma.$transaction([
     prisma.exoplanet.count({ where }),
     prisma.exoplanet.findMany({
