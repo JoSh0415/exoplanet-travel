@@ -52,3 +52,21 @@ export async function PATCH(
     return jsonError(404, "NOT_FOUND", "Booking not found");
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+
+  if (!id || id.length < 10) {
+    return jsonError(400, "VALIDATION_ERROR", "Invalid booking id");
+  }
+
+  try {
+    await prisma.booking.delete({ where: { id } });
+    return new NextResponse(null, { status: 204 });
+  } catch (e: any) {
+    return jsonError(404, "NOT_FOUND", "Booking not found");
+  }
+}
