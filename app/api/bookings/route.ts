@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../lib/prisma";
 import { jsonError } from "../../lib/http";
 import { createBookingSchema, listBookingsQuerySchema } from "../../lib/validators/bookings";
+import { corsHeaders } from "@/app/lib/cors";
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders });
+}
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -46,7 +51,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json(booking, { status: 201 });
+  return NextResponse.json(booking, { status: 201, headers: corsHeaders });
 }
 
 export async function GET(req: NextRequest) {
@@ -105,5 +110,5 @@ export async function GET(req: NextRequest) {
     pageSize,
     total,
     totalPages,
-  });
+  }, { headers: corsHeaders });
 }
