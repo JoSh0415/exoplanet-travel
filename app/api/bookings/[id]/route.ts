@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { jsonError } from "../../../lib/http";
 import { updateBookingSchema } from "../../../lib/validators/bookings";
+import { corsHeaders } from "@/app/lib/cors";
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders });
+}
 
 export async function PATCH(
   req: NextRequest,
@@ -47,7 +52,7 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json(updated, { status: 200 });
+    return NextResponse.json(updated, { status: 200, headers: corsHeaders });
   } catch (e: any) {
     return jsonError(404, "NOT_FOUND", "Booking not found");
   }
@@ -65,7 +70,7 @@ export async function DELETE(
 
   try {
     await prisma.booking.delete({ where: { id } });
-    return new NextResponse(null, { status: 204 });
+    return new NextResponse(null, { status: 204, headers: corsHeaders });
   } catch (e: any) {
     return jsonError(404, "NOT_FOUND", "Booking not found");
   }
