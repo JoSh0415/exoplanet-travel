@@ -1,0 +1,500 @@
+openapi: 3.0.3
+
+info:
+  title: Exoplanet Travel Agency API
+  version: 0.1.0
+  description: |
+    REST API for browsing exoplanet destinations and booking travel holidays.
+
+    ## Conventions
+    - All responses are JSON (`application/json`) unless otherwise stated.
+    - Pagination uses `page` (1-indexed) and `pageSize`.
+    - Error responses follow a consistent shape:
+      `{ "error": { "code": string, "message": string, "details"?: any } }`
+  contact:
+    name: API Maintainer
+    email: your-email@example.com
+  license:
+    name: Academic Use
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://YOUR-DEPLOYED-URL-HERE
+    description: Deployed server (optional)
+
+tags:
+  - name: Exoplanets
+    description: Browse exoplanet catalogue and retrieve planet details.
+  - name: Bookings
+    description: Create and manage travel bookings.
+
+paths:
+  /api/exoplanets:
+    get:
+      tags: [Exoplanets]
+      operationId: listExoplanets
+      summary: List exoplanets
+      description: |
+        Returns a paginated list of exoplanets with optional filters.
+
+        ### Typical usage
+        - Show a catalogue page (paged list)
+        - Filter by `vibe` or distance range
+        - Search by partial planet name using `q`
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/VibeParam"
+        - $ref: "#/components/parameters/MinDistanceParam"
+        - $ref: "#/components/parameters/MaxDistanceParam"
+        - $ref: "#/components/parameters/SortParam"
+        - $ref: "#/components/parameters/OrderParam"
+      responses:
+        "200":
+          description: Paginated list of exoplanets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedExoplanetsResponse"
+              examples:
+                example:
+                  summary: Page 1 results
+                  value:
+                    items:
+                      - id: cmlp9k8qn0003dskufekwmztt
+                        name: HD 219134 c
+                        distance: 21.3
+                        temperature: 782
+                        gravity: 1.91
+                        vibe: Molten Rock
+                        discoveryYear: 2015
+                    page: 1
+                    pageSize: 20
+                    total: 500
+                    totalPages: 25
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/exoplanets/{id}:
+    get:
+      tags: [Exoplanets]
+      operationId: getExoplanetById
+      summary: Get exoplanet by id
+      description: |
+        Returns full details for a single exoplanet by its unique id.
+
+        ### Typical usage
+        - Planet detail page after selecting an item from the catalogue
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      responses:
+        "200":
+          description: Exoplanet found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exoplanet"
+              examples:
+                example:
+                  summary: Example planet
+                  value:
+                    id: cmlp9k8qn0003dskufekwmztt
+                    name: HD 219134 c
+                    distance: 21.3
+                    temperature: 782
+                    gravity: 1.91
+                    vibe: Molten Rock
+                    discoveryYear: 2015
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/bookings:
+    get:
+      tags: [Bookings]
+      operationId: listBookings
+      summary: List bookings
+      description: |
+        Returns a paginated list of bookings.
+
+        ### Typical usage
+        - "My bookings" page (filter by `userId`)
+        - Admin view of all bookings (no filter)
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - in: query
+          name: userId
+          description: Optional filter for bookings belonging to a user.
+          schema:
+            type: string
+            minLength: 10
+          example: cmlp...userId
+      responses:
+        "200":
+          description: Paginated list of bookings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedBookingsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+    post:
+      tags: [Bookings]
+      operationId: createBooking
+      summary: Create a booking
+      description: |
+        Creates a booking for a user to travel to a selected exoplanet.
+
+        ### Notes
+        - In the current implementation, `userId` is provided in the request body.
+        - In a future version, `userId` would be derived from authentication (JWT/session).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBookingRequest"
+            examples:
+              example:
+                summary: Create booking
+                value:
+                  userId: cmlp...user
+                  planetId: cmlp...planet
+                  travelClass: Economy (Cryo-Sleep)
+      responses:
+        "201":
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/bookings/{id}:
+    patch:
+      tags: [Bookings]
+      operationId: updateBooking
+      summary: Update a booking (partial)
+      description: |
+        Partially updates a booking.
+
+        ### Typical usage
+        - Change travel class
+        - (Optional future improvement) Update booking status
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBookingRequest"
+            examples:
+              example:
+                summary: Update travel class
+                value:
+                  travelClass: First Class (Warp Drive)
+      responses:
+        "200":
+          description: Booking updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Bookings]
+      operationId: deleteBooking
+      summary: Delete a booking
+      description: |
+        Deletes a booking.
+
+        Returns `204 No Content` on success.
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      responses:
+        "204":
+          description: Deleted successfully (no content)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    IdPathParam:
+      in: path
+      name: id
+      required: true
+      description: Resource id (Prisma `cuid()`).
+      schema:
+        type: string
+        minLength: 10
+      example: cmlp9k8qn0003dskufekwmztt
+
+    PageParam:
+      in: query
+      name: page
+      description: Page number (1-indexed).
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+
+    PageSizeParam:
+      in: query
+      name: pageSize
+      description: Number of results per page (max 100).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      example: 20
+
+    SearchParam:
+      in: query
+      name: q
+      description: Case-insensitive substring search in planet name.
+      schema:
+        type: string
+      example: gliese
+
+    VibeParam:
+      in: query
+      name: vibe
+      description: Filter by derived category (e.g., "Molten Rock", "Mysterious").
+      schema:
+        type: string
+      example: Molten Rock
+
+    MinDistanceParam:
+      in: query
+      name: minDistance
+      description: Minimum distance in light years (inclusive).
+      schema:
+        type: number
+        minimum: 0
+      example: 0
+
+    MaxDistanceParam:
+      in: query
+      name: maxDistance
+      description: Maximum distance in light years (inclusive).
+      schema:
+        type: number
+        minimum: 0
+      example: 25
+
+    SortParam:
+      in: query
+      name: sort
+      description: Field used to sort results.
+      schema:
+        type: string
+        enum: [distance, discoveryYear, name]
+        default: distance
+
+    OrderParam:
+      in: query
+      name: order
+      description: Sort order.
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: asc
+
+  responses:
+    BadRequest:
+      description: Validation error (invalid parameters or body)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            example:
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Invalid query parameters
+                  details:
+                    fieldErrors:
+                      page:
+                        - Too small: expected number to be >=1
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            example:
+              value:
+                error:
+                  code: NOT_FOUND
+                  message: Resource not found
+
+  schemas:
+    Exoplanet:
+      type: object
+      required: [id, name, distance]
+      properties:
+        id:
+          type: string
+          description: Unique identifier (Prisma cuid).
+        name:
+          type: string
+          description: Planet name from NASA Exoplanet Archive.
+        distance:
+          type: number
+          description: Distance in light years.
+        temperature:
+          type: number
+          nullable: true
+          description: Equilibrium temperature in Kelvin (may be null if unknown).
+        gravity:
+          type: number
+          nullable: true
+          description: Derived gravity proxy using mass/radius if available.
+        vibe:
+          type: string
+          nullable: true
+          description: Derived category based on temperature and size.
+        discoveryYear:
+          type: integer
+          nullable: true
+          description: Discovery year (may be null).
+
+    Booking:
+      type: object
+      required: [id, userId, planetId, travelClass, bookingDate]
+      properties:
+        id:
+          type: string
+          description: Unique identifier (Prisma cuid).
+        userId:
+          type: string
+          description: User id who owns the booking.
+        planetId:
+          type: string
+          description: Exoplanet id being booked.
+        travelClass:
+          type: string
+          description: Travel class label chosen by the user.
+        bookingDate:
+          type: string
+          format: date-time
+          description: Timestamp when the booking was created.
+
+    CreateBookingRequest:
+      type: object
+      required: [userId, planetId, travelClass]
+      properties:
+        userId:
+          type: string
+          description: User id (temporary until authentication is implemented).
+        planetId:
+          type: string
+          description: Exoplanet id.
+        travelClass:
+          type: string
+          description: Travel class selection.
+
+    UpdateBookingRequest:
+      type: object
+      description: Provide at least one field to update.
+      properties:
+        travelClass:
+          type: string
+          description: Updated travel class selection.
+
+    PaginatedExoplanetsResponse:
+      type: object
+      required: [items, page, pageSize, total, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Exoplanet"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    PaginatedBookingsResponse:
+      type: object
+      required: [items, page, pageSize, total, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookingListItem"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    BookingListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        bookingDate:
+          type: string
+          format: date-time
+        travelClass:
+          type: string
+        user:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string, nullable: true }
+            email: { type: string }
+        planet:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            distance: { type: number }
+            vibe: { type: string, nullable: true }
+            discoveryYear: { type: integer, nullable: true }
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code.
+            message:
+              type: string
+              description: Human-readable error message.
+            details:
+              nullable: true
+              description: Optional validation or debug details.
