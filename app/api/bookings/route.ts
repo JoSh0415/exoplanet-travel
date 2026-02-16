@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../lib/prisma";
 import { jsonError } from "../../lib/http";
-import { createBookingSchema } from "../../lib/validators/bookings";
+import { createBookingSchema, listBookingsQuerySchema } from "../../lib/validators/bookings";
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -47,4 +47,63 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(booking, { status: 201 });
+}
+
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const queryObj = Object.fromEntries(url.searchParams.entries());
+
+  const parsed = listBookingsQuerySchema.safeParse(queryObj);
+  if (!parsed.success) {
+    return jsonError(400, "VALIDATION_ERROR", "Invalid query parameters", parsed.error.flatten());
+  }
+
+  const { page, pageSize, userId } = parsed.data;
+
+  const where: any = {};
+  if (userId) where.userId = userId;
+
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+
+  const [total, items] = await prisma.$transaction([
+    prisma.booking.count({ where }),
+    prisma.booking.findMany({
+      where,
+      orderBy: { bookingDate: "desc" },
+      skip,
+      take,
+      select: {
+        id: true,
+        bookingDate: true,
+        travelClass: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        planet: {
+          select: {
+            id: true,
+            name: true,
+            distance: true,
+            vibe: true,
+            discoveryYear: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  return NextResponse.json({
+    items,
+    page,
+    pageSize,
+    total,
+    totalPages,
+  });
 }
