@@ -1,8 +1,30 @@
 import { PrismaClient } from "@prisma/client";
 
-export const prisma = new PrismaClient();
+const createPrismaClient = () => {
+  if (process.env.NODE_ENV === "test") {
+    if (process.env.TEST_DATABASE_URL) {
+      return new PrismaClient({
+        datasources: {
+          db: {
+            url: process.env.TEST_DATABASE_URL,
+          },
+        },
+      });
+    }
+  }
+  return new PrismaClient();
+};
+
+export const prisma = createPrismaClient();
 
 export async function resetDb() {
+  if (process.env.NODE_ENV === "test" && !process.env.TEST_DATABASE_URL) {
+    throw new Error(
+      "Test environment detected but TEST_DATABASE_URL is missing. " +
+      "Please set TEST_DATABASE_URL in your .env file to prevent wiping the development database."
+    );
+  }
+  
   await prisma.booking.deleteMany();
   await prisma.user.deleteMany();
   await prisma.exoplanet.deleteMany();
