@@ -11,7 +11,8 @@
     "test": "cross-env NODE_ENV=test node -r dotenv/config ./node_modules/.bin/jest --runInBand",
     "test:watch": "cross-env NODE_ENV=test node -r dotenv/config ./node_modules/.bin/jest --watch --runInBand",
     "test:coverage": "cross-env NODE_ENV=test node -r dotenv/config ./node_modules/.bin/jest --coverage --runInBand",
-    "test:server": "cross-env NODE_ENV=test npm run dev"
+    "test:server": "cross-env NODE_ENV=test npm run dev",
+    "test:unit": "cross-env USE_TEST_DB=1 node -r dotenv/config ./node_modules/.bin/jest __tests__/unit --runInBand"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
