@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { exoplanetsQuerySchema } from "../../lib/validators/exoplanets";
 import { jsonError } from "../../lib/http";
@@ -22,7 +21,7 @@ export async function GET(req: NextRequest) {
   const { page, pageSize, q, vibe, minDistance, maxDistance, sort, order } =
     parsed.data;
 
-  const where: Prisma.ExoplanetWhereInput = {};
+  const where: Record<string, unknown> = {};
 
   if (q) {
     where.name = { contains: q, mode: "insensitive" };
@@ -33,9 +32,10 @@ export async function GET(req: NextRequest) {
   }
 
   if (minDistance != null || maxDistance != null) {
-    where.distance = {};
-    if (minDistance != null) where.distance.gte = minDistance;
-    if (maxDistance != null) where.distance.lte = maxDistance;
+    const dist: { gte?: number; lte?: number } = {};
+    if (minDistance != null) dist.gte = minDistance;
+    if (maxDistance != null) dist.lte = maxDistance;
+    where.distance = dist;
   }
 
   const skip = (page - 1) * pageSize;
