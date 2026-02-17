@@ -37,6 +37,8 @@ jobs:
 
       - name: Apply migrations (test DB)
         run: npx prisma migrate deploy
+        env:
+          PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: 1
 
       - name: Lint
         run: npm run lint
