@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { exoplanetsQuerySchema } from "../../lib/validators/exoplanets";
 import { jsonError } from "../../lib/http";
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
   const { page, pageSize, q, vibe, minDistance, maxDistance, sort, order } =
     parsed.data;
 
-  const where: any = {};
+  const where: Prisma.ExoplanetWhereInput = {};
 
   if (q) {
     where.name = { contains: q, mode: "insensitive" };

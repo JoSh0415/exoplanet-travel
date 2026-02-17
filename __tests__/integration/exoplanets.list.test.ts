@@ -66,7 +66,7 @@ test("GET /api/exoplanets supports case-insensitive q search", async () => {
   expect(res.status).toBe(200);
   expect(res.body.total).toBeGreaterThanOrEqual(1);
 
-  const names = res.body.items.map((p: any) => p.name.toLowerCase());
+  const names = res.body.items.map((p: { name: string }) => p.name.toLowerCase());
   expect(names.some((n: string) => n.includes("gliese"))).toBe(true);
 });
 
