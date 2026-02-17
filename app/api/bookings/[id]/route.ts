@@ -35,7 +35,7 @@ export async function PATCH(
     );
   }
 
-  const data: any = {};
+  const data: { travelClass?: string; status?: string } = {};
   if (parsed.data.travelClass !== undefined) data.travelClass = parsed.data.travelClass;
   if (parsed.data.status !== undefined) data.status = parsed.data.status;
 
@@ -53,7 +53,7 @@ export async function PATCH(
     });
 
     return NextResponse.json(updated, { status: 200, headers: corsHeaders });
-  } catch (e: any) {
+  } catch {
     return jsonError(404, "NOT_FOUND", "Booking not found");
   }
 }
@@ -71,7 +71,7 @@ export async function DELETE(
   try {
     await prisma.booking.delete({ where: { id } });
     return new NextResponse(null, { status: 204, headers: corsHeaders });
-  } catch (e: any) {
+  } catch {
     return jsonError(404, "NOT_FOUND", "Booking not found");
   }
 }

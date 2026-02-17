@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
 
   const { page, pageSize, userId } = parsed.data;
 
-  const where: any = {};
+  const where: { userId?: string } = {};
   if (userId) where.userId = userId;
 
   const skip = (page - 1) * pageSize;
