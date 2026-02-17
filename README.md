@@ -52,16 +52,44 @@ Base URL (local):
 ## 🧪 Quick API sanity checks
 
 List exoplanets (paged):
-    curl -s "http://localhost:3000/api/exoplanets?page=1&pageSize=20" | jq
+    `curl -s "http://localhost:3000/api/exoplanets?page=1&pageSize=20" | jq`
 
 Search by name:
-    curl -s "http://localhost:3000/api/exoplanets?q=gliese" | jq
+    `curl -s "http://localhost:3000/api/exoplanets?q=gliese" | jq`
 
 Filter by vibe:
-    curl -s "http://localhost:3000/api/exoplanets?vibe=Molten%20Rock" | jq
+    `curl -s "http://localhost:3000/api/exoplanets?vibe=Molten%20Rock" | jq`
 
 List bookings:
-    curl -s "http://localhost:3000/api/bookings?page=1&pageSize=10" | jq
+    `curl -s "http://localhost:3000/api/bookings?page=1&pageSize=10" | jq`
+
+---
+
+
+## ✅ Testing
+
+This project includes:
+- **Integration tests** (Jest + Supertest) that call the running API at `http://localhost:3000`
+- **Unit tests** for pure logic (e.g. planet “vibe” classification / gravity calculation)
+
+### Test database safety
+To prevent accidentally modifying the development database, tests use a dedicated test DB URL.
+
+In your `.env`, set:
+
+    TEST_DATABASE_URL="postgresql://.../test_db?schema=test"
+
+The test setup requires `TEST_DATABASE_URL` and will refuse to run destructive DB resets without it.
+
+### Run integration tests (recommended)
+1) Start the API using the **test database**:
+    `npm run test:server`
+
+2) In another terminal, run the tests:
+    `npm test`
+
+### Coverage
+    npm run test:coverage
 
 ---
 
@@ -105,10 +133,10 @@ List bookings:
 This project uses Pandoc for reliable page breaks in the PDF.
 
 1) Install Pandoc:
-    brew install pandoc
+    `brew install pandoc`
 
 2) Build the PDF:
-    pandoc docs/api.md -o docs/api.pdf
+    `pandoc docs/api.md -o docs/api.pdf`
 
 ---
 
