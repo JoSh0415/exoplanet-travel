@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { jsonError } from "../../lib/http";
 import { createBookingSchema, listBookingsQuerySchema } from "../../lib/validators/bookings";
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
 
   const { page, pageSize, userId } = parsed.data;
 
-  const where: any = {};
+  const where: Prisma.BookingWhereInput = {};
   if (userId) where.userId = userId;
 
   const skip = (page - 1) * pageSize;

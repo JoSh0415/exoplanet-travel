@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 const prismaClientOptions =
-  process.env.NODE_ENV === "test" && process.env.TEST_DATABASE_URL
+  process.env.USE_TEST_DB === "1" && process.env.TEST_DATABASE_URL
     ? {
         datasources: {
           db: {
