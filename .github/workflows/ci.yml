@@ -17,6 +17,7 @@ jobs:
       USE_TEST_DB: "1"
       DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
       TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+      DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
 
     steps:
       - name: Checkout
