@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { createBooking, fetchExoplanet, Exoplanet } from "../../lib/api";
+import { useAuth } from "../../lib/AuthContext";
 import Link from "next/link";
+import Navbar from "../../components/Navbar";
 
 const VIBE_CONFIG: Record<string, { emoji: string; color: string; bg: string; effect?: string; description: string }> = {
   "Mysterious": {
@@ -163,20 +165,31 @@ function habitabilityScore(planet: Exoplanet) {
 }
 
 export default function ExoplanetDetailsClient({ id }: { id: string }) {
+  const { user } = useAuth();
   const [planet, setPlanet] = useState<Exoplanet | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [userId, setUserId] = useState("");
   const [travelClass, setTravelClass] = useState<string>(TRAVEL_CLASSES[0].id);
   const [departureDate, setDepartureDate] = useState("");
   const [passengers, setPassengers] = useState(1);
   const [bookingStatus, setBookingStatus] = useState<"idle" | "submitting" | "success">("idle");
   const [bookingMsg, setBookingMsg] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
+
+  // Step validation: determine which steps are completed
+  const step0Complete = !!travelClass;
+  const step1Complete = !!departureDate && passengers >= 1;
+
+  function goToStep(target: number) {
+    // Can only go forward if previous steps are complete
+    if (target === 0) { setStep(0); return; }
+    if (target === 1 && step0Complete) { setStep(1); return; }
+    if (target === 2 && step0Complete && step1Complete) { setStep(2); return; }
+    // Can always go backward
+    if (target < step) { setStep(target); return; }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -197,17 +210,12 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
   }, [id]);
 
   async function onBook() {
-    if (!planet) return;
+    if (!planet || !user) return;
     setBookingMsg(null);
-
-    if (!userId || userId.length < 8) {
-      setBookingMsg("Please enter a valid User ID (from your seeded database).");
-      return;
-    }
 
     setBookingStatus("submitting");
     try {
-      const booking = await createBooking({ userId, planetId: planet.id, travelClass });
+      const booking = await createBooking({ userId: user.id, planetId: planet.id, travelClass });
       setBookingStatus("success");
       setBookingId(booking.id);
       setBookingMsg("Voyage confirmed!");
@@ -260,6 +268,8 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
       </div>
 
       <div className={`fixed inset-0 z-0 pointer-events-none opacity-30 bg-gradient-to-br ${vc.bg}`}></div>
+
+      <Navbar />
 
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pb-24 pt-6 md:pt-10">
         <nav className="flex items-center justify-between mb-8 animate-fade-in-up">
@@ -369,27 +379,38 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
           </div>
 
           <div className="flex border-b border-white/10">
-            {["Travel Class", "Details", "Confirm"].map((label, i) => (
-              <button
-                key={label}
-                onClick={() => setStep(i)}
-                className={`flex-1 py-3 text-xs font-mono uppercase tracking-wider transition-all relative
-                  ${step === i ? 'text-cyan-400' : step > i ? 'text-emerald-400/60' : 'text-slate-600'}
-                `}
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <span className={`w-5 h-5 rounded-full border text-[10px] flex items-center justify-center font-bold
-                    ${step === i ? 'border-cyan-500 bg-cyan-500/20 text-cyan-400' :
-                      step > i ? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-400' :
-                      'border-slate-700 text-slate-600'}
-                  `}>
-                    {step > i ? '✓' : i + 1}
+            {["Travel Class", "Details", "Confirm"].map((label, i) => {
+              const canAccess = i === 0 || (i === 1 && step0Complete) || (i === 2 && step0Complete && step1Complete);
+              const isLocked = !canAccess && i > step;
+              return (
+                <button
+                  key={label}
+                  onClick={() => goToStep(i)}
+                  disabled={isLocked}
+                  className={`flex-1 py-3 text-xs font-mono uppercase tracking-wider transition-all relative
+                    ${step === i ? 'text-cyan-400' : step > i ? 'text-emerald-400/60' : isLocked ? 'text-slate-700 cursor-not-allowed' : 'text-slate-600 hover:text-slate-400'}
+                  `}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <span className={`w-5 h-5 rounded-full border text-[10px] flex items-center justify-center font-bold
+                      ${step === i ? 'border-cyan-500 bg-cyan-500/20 text-cyan-400' :
+                        step > i ? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-400' :
+                        isLocked ? 'border-slate-800 text-slate-700' :
+                        'border-slate-700 text-slate-600'}
+                    `}>
+                      {step > i ? '✓' : isLocked ? (
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                      ) : i + 1}
+                    </span>
+                    <span className="hidden sm:inline">{label}</span>
                   </span>
-                  <span className="hidden sm:inline">{label}</span>
-                </span>
-                {step === i && <div className="absolute bottom-0 left-0 right-0 h-px bg-cyan-500"></div>}
-              </button>
-            ))}
+                  {step === i && <div className="absolute bottom-0 left-0 right-0 h-px bg-cyan-500"></div>}
+                </button>
+              );
+            })}
           </div>
 
           <div className="p-6 md:p-8">
@@ -431,8 +452,9 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
                     Est. travel time: <span className="text-slate-300">{estimatedTravel}</span>
                   </div>
                   <button
-                    onClick={() => setStep(1)}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-medium shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all hover:-translate-y-0.5"
+                    onClick={() => goToStep(1)}
+                    disabled={!step0Complete}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-medium shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     Continue
                   </button>
@@ -443,38 +465,45 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
             {step === 1 && (
               <div className="animate-fade-in-up">
                 <h3 className="text-sm font-mono text-slate-500 uppercase tracking-wider mb-4">Traveler Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
-                    <input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Commander Shepard"
-                      className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder:text-slate-700"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@starfleet.com"
-                      className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder:text-slate-700"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1.5">User ID <span className="text-slate-700">(from DB)</span></label>
-                    <input
-                      value={userId}
-                      onChange={(e) => setUserId(e.target.value)}
-                      placeholder="cmlp9k8ut00dw..."
-                      className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder:text-slate-700"
-                    />
+                {!user ? (
+                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6 text-center mb-6">
+                    <div className="text-3xl mb-3">🔐</div>
+                    <h4 className="text-lg font-bold text-amber-300 mb-2">Sign In Required</h4>
+                    <p className="text-sm text-slate-400 mb-4 max-w-sm mx-auto">
+                      You need an account to book interstellar voyages. Sign in or create an account to continue.
+                    </p>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-medium shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all hover:-translate-y-0.5"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                        <polyline points="10 17 15 12 10 7"/>
+                        <line x1="15" x2="3" y1="12" y2="12"/>
+                      </svg>
+                      Sign In / Register
+                    </Link>
                   </div>
+                ) : (
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-sm font-bold">
+                        {(user.name || user.email)[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-emerald-300">{user.name || "Traveler"}</div>
+                        <div className="text-xs text-slate-500 font-mono">{user.email}</div>
+                      </div>
+                      <div className="ml-auto flex items-center gap-1.5 text-[10px] font-mono text-emerald-500">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        VERIFIED
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1.5">Departure Date</label>
                     <input
@@ -501,10 +530,11 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
                 </div>
 
                 <div className="mt-6 flex justify-between items-center">
-                  <button onClick={() => setStep(0)} className="px-4 py-2 text-sm text-slate-500 hover:text-white transition-colors">← Back</button>
+                  <button onClick={() => goToStep(0)} className="px-4 py-2 text-sm text-slate-500 hover:text-white transition-colors">← Back</button>
                   <button
-                    onClick={() => setStep(2)}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-medium shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all hover:-translate-y-0.5"
+                    onClick={() => goToStep(2)}
+                    disabled={!step1Complete || !user}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-medium shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     Review Booking
                   </button>
@@ -540,8 +570,8 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
                     </div>
                     <div className="space-y-1">
                       <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Traveler</div>
-                      <div className="text-sm">{name || "—"}</div>
-                      <div className="text-xs text-slate-500">{email || "—"}</div>
+                      <div className="text-sm">{user?.name || "—"}</div>
+                      <div className="text-xs text-slate-500">{user?.email || "—"}</div>
                     </div>
                     <div className="space-y-1">
                       <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Details</div>
@@ -558,7 +588,7 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
                 )}
 
                 <div className="flex justify-between items-center">
-                  <button onClick={() => setStep(1)} className="px-4 py-2 text-sm text-slate-500 hover:text-white transition-colors">← Back</button>
+                  <button onClick={() => goToStep(1)} className="px-4 py-2 text-sm text-slate-500 hover:text-white transition-colors">← Back</button>
                   <button
                     onClick={onBook}
                     disabled={bookingStatus === "submitting"}
@@ -602,9 +632,6 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
                       setBookingMsg(null);
                       setBookingId(null);
                       setStep(0);
-                      setName("");
-                      setEmail("");
-                      setUserId("");
                       setDepartureDate("");
                       setPassengers(1);
                     }}

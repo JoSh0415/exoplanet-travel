@@ -8,6 +8,7 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { parse } from 'csv-parse/sync';
+import { hashSync } from 'bcryptjs';
 import { calculateGravity, determineVibe } from '../app/lib/planetMath';
 
 const prisma = new PrismaClient();
@@ -99,6 +100,7 @@ async function main() {
         data: {
             email: 'star.lord@guardians.com',
             name: 'Peter Quill',
+            passwordHash: hashSync('password123', 10),
         },
     });
 
@@ -106,6 +108,7 @@ async function main() {
         data: {
             email: 'ripley@nostromo.corp',
             name: 'Ellen Ripley',
+            passwordHash: hashSync('password123', 10),
         },
     });
 
