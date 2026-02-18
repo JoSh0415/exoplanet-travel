@@ -27,6 +27,14 @@ export type ExoplanetQuery = {
   order?: "asc" | "desc";
 };
 
+export type Booking = {
+  id: string;
+  userId: string;
+  planetId: string;
+  travelClass: string;
+  bookingDate: string;
+};
+
 export function buildQuery(params: Record<string, any>) {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -43,5 +51,33 @@ export async function fetchExoplanets(query: ExoplanetQuery): Promise<Paginated<
     const body = await res.json().catch(() => null);
     throw new Error(body?.error?.message ?? `Failed to fetch exoplanets (${res.status})`);
   }
+  return res.json();
+}
+
+export async function fetchExoplanet(id: string): Promise<Exoplanet> {
+  const res = await fetch(`/api/exoplanets/${id}`, { cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to fetch exoplanet (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function createBooking(input: {
+  userId: string;
+  planetId: string;
+  travelClass: string;
+}): Promise<Booking> {
+  const res = await fetch(`/api/bookings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to create booking (${res.status})`);
+  }
+
   return res.json();
 }
