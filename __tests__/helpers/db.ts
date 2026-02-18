@@ -46,6 +46,7 @@ export async function seedMinimalData() {
     data: {
       email: "test.user@example.com",
       name: "Test User",
+      passwordHash: "$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWX12", // dummy hash for tests
     },
   });
 

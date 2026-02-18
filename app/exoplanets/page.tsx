@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchExoplanets, Exoplanet, Paginated } from "../lib/api";
+import Navbar from "../components/Navbar";
 
 type Sort = "distance" | "discoveryYear" | "name";
 type Order = "asc" | "desc";
@@ -92,7 +93,7 @@ function formatDistance(d: number) {
   return d.toFixed(1);
 }
 
-function tempLabel(k: number | null | undefined) {
+function _tempLabel(k: number | null | undefined) {
   if (k == null) return null;
   if (k < 200) return "Freezing";
   if (k < 280) return "Cold";
@@ -102,7 +103,7 @@ function tempLabel(k: number | null | undefined) {
   return "Extreme";
 }
 
-function gravLabel(g: number | null | undefined) {
+function _gravLabel(g: number | null | undefined) {
   if (g == null) return null;
   if (g < 0.5) return "Micro";
   if (g < 0.9) return "Low";
@@ -111,6 +112,9 @@ function gravLabel(g: number | null | undefined) {
   if (g < 5) return "Intense";
   return "Crushing";
 }
+
+void _tempLabel;
+void _gravLabel;
 
 export default function ExoplanetsPage() {
   return (
@@ -227,6 +231,8 @@ function ExoplanetsContent() {
         <div className="absolute bottom-0 left-0 right-0 h-[500px] bg-gradient-to-t from-cyan-900/10 to-transparent opacity-20"></div>
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_70%)]"></div>
       </div>
+
+      <Navbar />
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 pb-24 pt-12 md:pt-20">
         <header className="mb-16 text-center relative">
@@ -395,7 +401,7 @@ function ExoplanetsContent() {
           <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4 px-2">
              <div className="text-sm font-mono text-slate-500">
                 <span className="text-cyan-400 font-bold">{data.total}</span> SIGNALS DETECTED
-                {form.q && <span className="ml-2 text-slate-600">// QUERY: &quot;{form.q}&quot;</span>}
+                {form.q && <span className="ml-2 text-slate-600">{/* QUERY: */}&quot;{form.q}&quot;</span>}
              </div>
              <div className="flex items-center gap-4 text-xs font-mono text-slate-600 bg-slate-900/50 px-3 py-1.5 rounded-full border border-white/5">
                 <span>PAGE {data.page} / {data.totalPages}</span>
@@ -432,7 +438,7 @@ function ExoplanetsContent() {
                 <button onClick={onClear} className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">Reset Parameters</button>
               </div>
             ) : (
-              data.items.map((p, i) => {
+              data.items.map((p) => {
                 const vc = VIBE_CONFIG[p.vibe ?? ""] ?? DEFAULT_VIBE;
                 
                 let tempState = "normal";
