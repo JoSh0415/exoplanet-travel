@@ -13,6 +13,9 @@ const config: Config = {
     "!**/node_modules/**",
   ],
   setupFilesAfterEnv: ["<rootDir>/__tests__/helpers/jest.setup.ts"],
+  moduleNameMapper: {
+    "^jose$": "<rootDir>/__tests__/helpers/joseMock.ts",
+  }
 };
 
 export default config;

@@ -38,7 +38,7 @@ const globalForRateLimit = globalThis as unknown as {
 };
 
 export const authRateLimiter =
-  globalForRateLimit.authRateLimiter || new RateLimiter(process.env.NODE_ENV === "test" ? 1000 : 5, 60 * 1000); // 5 requests per minute in dev/prod
+  globalForRateLimit.authRateLimiter || new RateLimiter((process.env.NODE_ENV === "test" || process.env.USE_TEST_DB === "1") ? 100 : 5, 60 * 1000); // 5 requests per minute in dev/prod
 
 if (process.env.NODE_ENV !== 'production') {
   globalForRateLimit.authRateLimiter = authRateLimiter;
