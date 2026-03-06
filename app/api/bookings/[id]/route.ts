@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { jsonError } from "../../../lib/http";
 import { updateBookingSchema } from "../../../lib/validators/bookings";
+import { validateId } from "../../../lib/validators/common";
 import { corsHeaders } from "@/app/lib/cors";
 import { getSession } from "../../../lib/auth";
 
@@ -20,7 +21,8 @@ export async function PATCH(
 
   const { id } = await context.params;
 
-  if (!id || id.length < 10) {
+  const idCheck = validateId(id);
+  if (!idCheck.success) {
     return jsonError(400, "VALIDATION_ERROR", "Invalid booking id");
   }
 
@@ -57,7 +59,12 @@ export async function PATCH(
 
   const data: { travelClass?: string; status?: string } = {};
   if (parsed.data.travelClass !== undefined) data.travelClass = parsed.data.travelClass;
-  if (parsed.data.status !== undefined) data.status = parsed.data.status;
+  if (parsed.data.status !== undefined) {
+    if (session.role !== "ADMIN" && parsed.data.status !== "CANCELLED") {
+      return jsonError(403, "FORBIDDEN", "Only admins can change booking status, except for cancellations");
+    }
+    data.status = parsed.data.status;
+  }
 
   const updated = await prisma.booking.update({
     where: { id },
@@ -86,7 +93,8 @@ export async function DELETE(
 
   const { id } = await context.params;
 
-  if (!id || id.length < 10) {
+  const idCheck = validateId(id);
+  if (!idCheck.success) {
     return jsonError(400, "VALIDATION_ERROR", "Invalid booking id");
   }
 

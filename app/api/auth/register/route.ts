@@ -4,12 +4,19 @@ import { jsonError } from "../../../lib/http";
 import { registerSchema } from "../../../lib/validators/auth";
 import { hashPassword, setSessionCookie } from "../../../lib/auth";
 import { corsHeaders } from "@/app/lib/cors";
+import { authRateLimiter } from "../../../lib/rateLimit";
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.ip ?? req.headers.get("x-forwarded-for") ?? "unknown";
+  const { limited, retryAfter } = authRateLimiter.isRateLimited(ip);
+  if (limited) {
+    return jsonError(429, "TOO_MANY_REQUESTS", "Too many registration attempts. Please try again later.", { retryAfter });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -62,7 +69,7 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(
-    { id: user.id, email: user.email, name: user.name },
+    { id: user.id, email: user.email, name: user.name, role: user.role },
     { status: 201, headers: corsHeaders }
   );
 }

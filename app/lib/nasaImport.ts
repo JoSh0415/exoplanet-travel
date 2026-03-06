@@ -71,21 +71,29 @@ export async function fetchAndNormalizePlanets(
 
   const selected = limit ? records.slice(0, limit) : records;
 
-  return selected.map((record) => {
+  const validPlanets: ProcessedPlanet[] = [];
+
+  for (const record of selected) {
+    if (!record.pl_name || !record.sy_dist) continue;
+
     const mass = toNumberOrNull(record.pl_masse);
     const radius = toNumberOrNull(record.pl_rade);
     const temp = toNumberOrNull(record.pl_eqt);
     const distParsecs = parseFloat(record.sy_dist);
 
-    return {
+    if (isNaN(distParsecs)) continue; // Ignore if distance is irreparably broken
+
+    validPlanets.push({
       name: record.pl_name,
       distance: parseFloat((distParsecs * 3.26156).toFixed(2)),
       temperature: temp,
       gravity: calculateGravity(mass, radius),
       vibe: determineVibe(temp, radius),
       discoveryYear: parseInt(record.disc_year) || null,
-    };
-  });
+    });
+  }
+
+  return validPlanets;
 }
 
 /* ── Upsert planets + record import run ────────────────────────────── */
@@ -101,30 +109,39 @@ export async function importExoplanets(
   let insertedCount = 0;
   let updatedCount = 0;
   let errorMessage: string | null = null;
+  const errors: string[] = [];
 
   try {
     const planets = await fetchAndNormalizePlanets(options.limit, tapQuery);
 
     for (const planet of planets) {
-      const existing = await db.exoplanet.findUnique({
-        where: { name: planet.name },
-        select: { id: true },
-      });
-
-      if (existing) {
-        await db.exoplanet.update({
+      try {
+        const existing = await db.exoplanet.findUnique({
           where: { name: planet.name },
-          data: planet,
+          select: { id: true },
         });
-        updatedCount++;
-      } else {
-        await db.exoplanet.create({ data: planet });
-        insertedCount++;
+
+        if (existing) {
+          await db.exoplanet.update({
+            where: { name: planet.name },
+            data: planet,
+          });
+          updatedCount++;
+        } else {
+          await db.exoplanet.create({ data: planet });
+          insertedCount++;
+        }
+      } catch (rowErr) {
+        errors.push(`Failed to import ${planet.name}: ${rowErr instanceof Error ? rowErr.message : String(rowErr)}`);
       }
     }
   } catch (err) {
     errorMessage =
-      err instanceof Error ? err.message : "Unknown error during import";
+      err instanceof Error ? err.message : "Unknown error during data fetching";
+  }
+
+  if (!errorMessage && errors.length > 0) {
+    errorMessage = `Imported with ${errors.length} row errors. First error: ${errors[0]}`;
   }
 
   await db.dataImportRun.create({

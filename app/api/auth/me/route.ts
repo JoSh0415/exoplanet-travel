@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getSession } from "../../../lib/auth";
 import { corsHeaders } from "@/app/lib/cors";
 
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders });
+}
+
 export async function GET() {
   const session = await getSession();
 

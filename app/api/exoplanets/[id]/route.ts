@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { jsonError } from "../../../lib/http";
 import { corsHeaders } from "@/app/lib/cors";
+import { validateId } from "../../../lib/validators/common";
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
@@ -13,7 +14,8 @@ export async function GET(
 ) {
   const { id } = await context.params;
 
-  if (!id || id.length < 10) {
+  const idCheck = validateId(id);
+  if (!idCheck.success) {
     return jsonError(400, "VALIDATION_ERROR", "Invalid exoplanet id");
   }
 
