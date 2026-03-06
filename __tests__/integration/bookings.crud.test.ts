@@ -397,6 +397,107 @@ describe("PATCH /api/bookings/{id}", () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
   });
+
+  test("owner can cancel their own booking (status → CANCELLED)", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("canceller");
+    const cookies = await registerAndLogin(email, "securePass123", "Canceller");
+
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", cookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+    expect(created.body.status).toBe("CONFIRMED");
+
+    const cancelled = await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", cookies.join("; "))
+      .send({ status: "CANCELLED" });
+
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body.status).toBe("CANCELLED");
+
+    // Verify persisted
+    const inDb = await prisma.booking.findUnique({ where: { id: created.body.id } });
+    expect(inDb?.status).toBe("CANCELLED");
+  });
+
+  test("non-admin cannot set status to CONFIRMED (403)", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("status-escalate");
+    const cookies = await registerAndLogin(email, "securePass123", "StatusEsc");
+
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", cookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const res = await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", cookies.join("; "))
+      .send({ status: "CONFIRMED" });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("FORBIDDEN");
+  });
+
+  test("rejects invalid status value (400)", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("bad-status");
+    const cookies = await registerAndLogin(email, "securePass123", "BadStatus");
+
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", cookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const res = await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", cookies.join("; "))
+      .send({ status: "APPROVED" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  test("admin can set any valid status", async () => {
+    const { planet } = await seedMinimalData();
+
+    const emailReg = uniqueEmail("status-reg");
+    const regCookies = await registerAndLogin(emailReg, "securePass123", "StatusReg");
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", regCookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    // Cancel it first (as owner)
+    await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", regCookies.join("; "))
+      .send({ status: "CANCELLED" });
+
+    // Admin re-confirms
+    const emailAdmin = uniqueEmail("status-admin");
+    await registerAndLogin(emailAdmin, "securePass123", "StatusAdmin");
+    await promoteToAdmin(emailAdmin);
+    const loginRes = await request(BASE)
+      .post("/api/auth/login")
+      .send({ email: emailAdmin, password: "securePass123" });
+    const raw = loginRes.headers["set-cookie"];
+    const adminCookies = Array.isArray(raw) ? raw : raw ? [raw] : [];
+
+    const res = await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", adminCookies.join("; "))
+      .send({ status: "CONFIRMED" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("CONFIRMED");
+  }, 15_000);
 });
 
 // ── DELETE /api/bookings/{id} ───────────────────────────────────────

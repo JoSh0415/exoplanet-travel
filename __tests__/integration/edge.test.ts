@@ -94,4 +94,16 @@ describe("High-Value Integration Edge Cases", () => {
       expect(res.body.user).toBeNull(); // Should treat expired as unauthenticated, not crash
     });
   });
+
+  describe("Malformed JSON Body", () => {
+    it("should return 400 INVALID_JSON for a body that is not valid JSON", async () => {
+      const res = await request(BASE)
+        .post("/api/auth/login")
+        .set("Content-Type", "application/json")
+        .send("{this is not json}");
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toHaveProperty("code", "INVALID_JSON");
+    });
+  });
 });

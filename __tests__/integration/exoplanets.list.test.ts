@@ -94,6 +94,41 @@ test("GET /api/exoplanets supports minDistance/maxDistance filter", async () => 
   }
 });
 
+test("GET /api/exoplanets supports sort=discoveryYear&order=desc", async () => {
+  await seedPlanetsForListTests();
+
+  const res = await request(BASE).get(
+    "/api/exoplanets?sort=discoveryYear&order=desc&pageSize=5"
+  );
+  expect(res.status).toBe(200);
+
+  const years = res.body.items.map((p: { discoveryYear: number }) => p.discoveryYear);
+  for (let i = 1; i < years.length; i++) {
+    expect(years[i]).toBeLessThanOrEqual(years[i - 1]);
+  }
+});
+
+test("GET /api/exoplanets supports sort=name&order=asc", async () => {
+  await seedPlanetsForListTests();
+
+  const res = await request(BASE).get("/api/exoplanets?sort=name&order=asc&pageSize=100");
+  expect(res.status).toBe(200);
+
+  const names = res.body.items.map((p: { name: string }) => p.name);
+  const sorted = [...names].sort((a: string, b: string) => a.localeCompare(b));
+  expect(names).toEqual(sorted);
+});
+
+test("GET /api/exoplanets returns empty items for page beyond total", async () => {
+  await seedPlanetsForListTests();
+
+  const res = await request(BASE).get("/api/exoplanets?page=999&pageSize=10");
+  expect(res.status).toBe(200);
+  expect(res.body.items).toHaveLength(0);
+  expect(res.body.page).toBe(999);
+  expect(res.body.totalPages).toBeGreaterThanOrEqual(1);
+});
+
 test("GET /api/exoplanets rejects invalid params with 400 + validation error shape", async () => {
   const res = await request(BASE).get("/api/exoplanets?page=-1");
   expect(res.status).toBe(400);

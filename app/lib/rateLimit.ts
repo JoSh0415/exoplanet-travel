@@ -2,10 +2,18 @@ export class RateLimiter {
   private requests: Map<string, { count: number; resetTime: number }> = new Map();
   private maxRequests: number;
   private windowMs: number;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(maxRequests: number, windowMs: number) {
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
+
+    // Periodically sweep expired entries to prevent unbounded memory growth
+    this.cleanupTimer = setInterval(() => this.cleanup(), windowMs * 2);
+    // Allow the process to exit without waiting for this timer
+    if (this.cleanupTimer && typeof this.cleanupTimer === "object" && "unref" in this.cleanupTimer) {
+      this.cleanupTimer.unref();
+    }
   }
 
   isRateLimited(ip: string): { limited: boolean; retryAfter: number | null } {
@@ -29,6 +37,16 @@ export class RateLimiter {
 
     record.count++;
     return { limited: false, retryAfter: null };
+  }
+
+  /** Remove expired entries to bound memory usage. */
+  private cleanup(): void {
+    const now = Date.now();
+    for (const [ip, record] of this.requests) {
+      if (now > record.resetTime) {
+        this.requests.delete(ip);
+      }
+    }
   }
 }
 
