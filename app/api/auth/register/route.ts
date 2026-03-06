@@ -7,7 +7,7 @@ import { hashPassword, setSessionCookie } from "../../../lib/auth";
 import { authRateLimiter } from "../../../lib/rateLimit";
 
 export async function POST(req: NextRequest) {
-  const ip = req.ip ?? req.headers.get("x-forwarded-for") ?? "unknown";
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   const { limited, retryAfter } = authRateLimiter.isRateLimited(ip);
   if (limited) {
     return jsonError(429, "TOO_MANY_REQUESTS", "Too many registration attempts. Please try again later.", { retryAfter });

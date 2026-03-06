@@ -185,6 +185,36 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /api/bookings/{id}:
+    get:
+      tags: [Bookings]
+      operationId: getBooking
+      summary: Get a single booking by ID
+      security:
+        - cookieAuth: []
+      description: |
+        Returns a single booking with user and planet details.
+
+        - Only the **booking owner** or an **ADMIN** can view a booking.
+        - Returns `403 Forbidden` if the user is neither owner nor admin.
+        - Requires a valid session cookie.
+      parameters:
+        - $ref: "#/components/parameters/IdPathParam"
+      responses:
+        "200":
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
     patch:
       tags: [Bookings]
       operationId: updateBooking
@@ -297,6 +327,18 @@ paths:
                     error:
                       code: EMAIL_EXISTS
                       message: An account with this email already exists
+        "429":
+          description: Too many registration attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                example:
+                  value:
+                    error:
+                      code: TOO_MANY_REQUESTS
+                      message: Too many registration attempts. Please try again later.
 
   /api/auth/login:
     post:
@@ -340,6 +382,18 @@ paths:
                     error:
                       code: INVALID_CREDENTIALS
                       message: Invalid email or password
+        "429":
+          description: Too many login attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                example:
+                  value:
+                    error:
+                      code: TOO_MANY_REQUESTS
+                      message: Too many login attempts. Please try again later.
 
   /api/auth/me:
     get:
@@ -963,8 +1017,8 @@ components:
           description: User email (stored lowercase).
         password:
           type: string
-          minLength: 6
-          description: Password (min 6 characters).
+          minLength: 8
+          description: Password (min 8 characters).
         name:
           type: string
           description: Display name.
@@ -1011,47 +1065,59 @@ components:
 
     RefreshResult:
       type: object
-      required: [created, updated, errors]
+      required: [message, retrievedAt, tapQuery, insertedCount, updatedCount]
       properties:
-        created:
+        message:
+          type: string
+          description: Human-readable summary of the import result.
+        retrievedAt:
+          type: string
+          format: date-time
+          description: Timestamp when data was retrieved from NASA.
+        tapQuery:
+          type: string
+          description: The TAP query that was executed.
+        insertedCount:
           type: integer
           description: Number of new exoplanets inserted.
-        updated:
+        updatedCount:
           type: integer
           description: Number of existing exoplanets updated.
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              planet:
-                type: string
-              error:
-                type: string
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error message if the import had issues (null on full success).
 
     DataImportRun:
       type: object
-      required: [id, startedAt, finishedAt, status, planetsCreated, planetsUpdated, errors]
+      required: [id, sourceName, tapQuery, retrievedAt, insertedCount, updatedCount, createdAt]
       properties:
         id:
           type: string
-        startedAt:
+        sourceName:
+          type: string
+          description: Name of the data source (e.g. "NASA Exoplanet Archive").
+        tapQuery:
+          type: string
+          description: The TAP query that was executed.
+        retrievedAt:
           type: string
           format: date-time
-        finishedAt:
+          description: Timestamp when data was retrieved from the source.
+        insertedCount:
+          type: integer
+          description: Number of new records inserted.
+        updatedCount:
+          type: integer
+          description: Number of existing records updated.
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error message if the import had issues (null on success).
+        createdAt:
           type: string
           format: date-time
-          nullable: true
-        status:
-          type: string
-          enum: [SUCCESS, PARTIAL, FAILED]
-        planetsCreated:
-          type: integer
-        planetsUpdated:
-          type: integer
-        errors:
-          nullable: true
-          description: JSON array of error objects (if any).
+          description: Timestamp when this import run record was created.
 
     PaginatedImportRunsResponse:
       type: object

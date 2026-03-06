@@ -23,6 +23,51 @@ async function verifyBookingAccess(id: string, session: { userId: string; role: 
   return { existing };
 }
 
+export async function GET(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session) {
+    return jsonError(401, "UNAUTHORIZED", "Authentication required");
+  }
+
+  const { id } = await context.params;
+
+  const idCheck = validateId(id);
+  if (!idCheck.success) {
+    return jsonError(400, "VALIDATION_ERROR", "Invalid booking id");
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      bookingDate: true,
+      travelClass: true,
+      status: true,
+      userId: true,
+      planetId: true,
+      user: {
+        select: { id: true, name: true, email: true },
+      },
+      planet: {
+        select: { id: true, name: true, distance: true, vibe: true, discoveryYear: true },
+      },
+    },
+  });
+
+  if (!booking) {
+    return jsonError(404, "NOT_FOUND", "Booking not found");
+  }
+
+  if (booking.userId !== session.userId && session.role !== "ADMIN") {
+    return jsonError(403, "FORBIDDEN", "You can only view your own bookings");
+  }
+
+  return jsonResponse(booking, { status: 200 });
+}
+
 export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }

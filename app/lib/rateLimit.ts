@@ -1,11 +1,11 @@
 export class RateLimiter {
   private requests: Map<string, { count: number; resetTime: number }> = new Map();
   private maxRequests: number;
-  private windowWindow: number;
+  private windowMs: number;
 
   constructor(maxRequests: number, windowMs: number) {
     this.maxRequests = maxRequests;
-    this.windowWindow = windowMs;
+    this.windowMs = windowMs;
   }
 
   isRateLimited(ip: string): { limited: boolean; retryAfter: number | null } {
@@ -13,13 +13,13 @@ export class RateLimiter {
     const record = this.requests.get(ip);
 
     if (!record) {
-      this.requests.set(ip, { count: 1, resetTime: now + this.windowWindow });
+      this.requests.set(ip, { count: 1, resetTime: now + this.windowMs });
       return { limited: false, retryAfter: null };
     }
 
     if (now > record.resetTime) {
       record.count = 1;
-      record.resetTime = now + this.windowWindow;
+      record.resetTime = now + this.windowMs;
       return { limited: false, retryAfter: null };
     }
 

@@ -1,4 +1,5 @@
 import { clearSessionCookie } from "../../../lib/auth";
+import { jsonResponse } from "../../../lib/http";
 
 export async function POST() {
   await clearSessionCookie();

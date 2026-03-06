@@ -7,7 +7,6 @@ const config: Config = {
   clearMocks: true,
   restoreMocks: true,
   collectCoverageFrom: [
-    "src/**/*.{ts,tsx}",
     "app/**/*.{ts,tsx}",
     "!**/*.d.ts",
     "!**/node_modules/**",

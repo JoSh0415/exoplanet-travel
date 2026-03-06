@@ -249,6 +249,51 @@ Returns the created booking:
 
 \newpage
 
+# GET /api/bookings/{id}
+
+Purpose: Retrieve a single booking by its ID, including user and planet details.
+
+**Authentication:** Requires a valid `exo-session` cookie. Only the **booking owner** or an **ADMIN** can view a booking.
+
+## Path parameters
+- id (string): Booking id
+
+## Example request
+
+    curl -s -b cookies.txt "http://localhost:3000/api/bookings/cmlp9k90d00dzdskuje80hqav" | jq
+
+## Success response (200)
+Returns the booking with related data:
+
+    {
+      "id": "cmlp9k90d00dzdskuje80hqav",
+      "userId": "cmlp9k8ut00dwdskud6g70sxc",
+      "planetId": "cmlp9k8qn0007dskuhej1ifkh",
+      "travelClass": "Economy (Cryo-Sleep)",
+      "status": "CONFIRMED",
+      "bookingDate": "2026-02-16T14:52:20.000Z",
+      "user": {
+        "id": "cmlp9k8ut00dwdskud6g70sxc",
+        "name": "Jane Doe",
+        "email": "jane@example.com"
+      },
+      "planet": {
+        "id": "cmlp9k8qn0007dskuhej1ifkh",
+        "name": "Kepler-442 b",
+        "distance": 100.0,
+        "vibe": "Habitable Paradise",
+        "discoveryYear": 2015
+      }
+    }
+
+## Error responses
+- 400: Invalid booking id
+- 401: Authentication required (no valid session cookie)
+- 403: Forbidden — you can only view your own bookings
+- 404: Booking not found
+
+\newpage
+
 # PATCH /api/bookings/{id}
 
 Purpose: Partially update a booking (e.g., change travel class).
@@ -444,20 +489,24 @@ The import upserts planets (inserts new, updates existing) and records a `DataIm
 ## Success response (200)
 
     {
-      "created": 15,
-      "updated": 485,
-      "errors": []
+      "message": "Import completed successfully",
+      "retrievedAt": "2026-03-06T10:00:00.000Z",
+      "tapQuery": "SELECT ...",
+      "insertedCount": 15,
+      "updatedCount": 485,
+      "errorMessage": null
     }
 
 ## Partial success response (207)
 Returned when the import completed but some planets failed:
 
     {
-      "created": 10,
-      "updated": 480,
-      "errors": [
-        { "planet": "Unknown b", "error": "Missing required field" }
-      ]
+      "message": "Import completed with errors",
+      "retrievedAt": "2026-03-06T10:00:00.000Z",
+      "tapQuery": "SELECT ...",
+      "insertedCount": 10,
+      "updatedCount": 480,
+      "errorMessage": "Failed to parse row 42: missing required field"
     }
 
 ## Error responses
@@ -486,12 +535,13 @@ Purpose: List data import run records (paginated).
       "items": [
         {
           "id": "cm...",
-          "startedAt": "2026-03-06T10:00:00.000Z",
-          "finishedAt": "2026-03-06T10:00:12.000Z",
-          "status": "SUCCESS",
-          "planetsCreated": 15,
-          "planetsUpdated": 485,
-          "errors": null
+          "sourceName": "NASA Exoplanet Archive",
+          "tapQuery": "SELECT ...",
+          "retrievedAt": "2026-03-06T10:00:00.000Z",
+          "insertedCount": 15,
+          "updatedCount": 485,
+          "errorMessage": null,
+          "createdAt": "2026-03-06T10:00:12.000Z"
         }
       ],
       "page": 1,
