@@ -74,7 +74,7 @@ describe("POST /api/admin/refresh-exoplanets", () => {
     const runs = await prisma.dataImportRun.findMany();
     expect(runs.length).toBeGreaterThanOrEqual(1);
     expect(runs[0]).toHaveProperty("sourceName", "NASA Exoplanet Archive");
-  }, 60_000); // NASA TAP can be slow
+  }, 120_000); // NASA TAP can be slow
 });
 
 // ── GET /api/admin/import-runs ──────────────────────────────────────
