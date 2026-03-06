@@ -19,7 +19,8 @@ async function registerAndLogin(
     .post("/api/auth/register")
     .send({ email, password, name });
   expect(res.status).toBe(201);
-  return res.headers["set-cookie"] ?? [];
+  const raw = res.headers["set-cookie"];
+  return Array.isArray(raw) ? raw : raw ? [raw] : [];
 }
 
 /** Promote a user to ADMIN directly in the database */
@@ -163,7 +164,8 @@ describe("GET /api/bookings", () => {
     const loginRes = await request(BASE)
       .post("/api/auth/login")
       .send({ email: emailAdmin, password: "securePass123" });
-    const adminCookies = loginRes.headers["set-cookie"] as string[];
+    const rawCookies = loginRes.headers["set-cookie"];
+    const adminCookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
 
     const res = await request(BASE)
       .get("/api/bookings")
@@ -255,7 +257,8 @@ describe("PATCH /api/bookings/{id}", () => {
     const loginRes = await request(BASE)
       .post("/api/auth/login")
       .send({ email: emailAdmin, password: "securePass123" });
-    const adminCookies = loginRes.headers["set-cookie"] as string[];
+    const rawCookies2 = loginRes.headers["set-cookie"];
+    const adminCookies = Array.isArray(rawCookies2) ? rawCookies2 : rawCookies2 ? [rawCookies2] : [];
 
     const res = await request(BASE)
       .patch(`/api/bookings/${created.body.id}`)
@@ -356,7 +359,8 @@ describe("DELETE /api/bookings/{id}", () => {
     const loginRes = await request(BASE)
       .post("/api/auth/login")
       .send({ email: emailAdmin, password: "securePass123" });
-    const adminCookies = loginRes.headers["set-cookie"] as string[];
+    const rawCookies3 = loginRes.headers["set-cookie"];
+    const adminCookies = Array.isArray(rawCookies3) ? rawCookies3 : rawCookies3 ? [rawCookies3] : [];
 
     const res = await request(BASE)
       .delete(`/api/bookings/${created.body.id}`)

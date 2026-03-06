@@ -13,8 +13,8 @@ async function registerAndLogin(
     .post("/api/auth/register")
     .send({ email, password, name });
   expect(res.status).toBe(201);
-  // supertest returns set-cookie as an array
-  return res.headers["set-cookie"] ?? [];
+  const raw = res.headers["set-cookie"];
+  return Array.isArray(raw) ? raw : raw ? [raw] : [];
 }
 
 /** Promote a user to ADMIN directly in the database */
@@ -56,7 +56,8 @@ describe("POST /api/admin/refresh-exoplanets", () => {
       .post("/api/auth/login")
       .send({ email, password: "securePass123" });
     expect(loginRes.status).toBe(200);
-    const adminCookies = loginRes.headers["set-cookie"] as string[];
+    const rawCookies = loginRes.headers["set-cookie"];
+    const adminCookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
     expect(adminCookies).toBeDefined();
 
     const res = await request(BASE)
@@ -106,7 +107,8 @@ describe("GET /api/admin/import-runs", () => {
       .post("/api/auth/login")
       .send({ email, password: "securePass123" });
     expect(loginRes.status).toBe(200);
-    const adminCookies = loginRes.headers["set-cookie"] as string[];
+    const rawCookies2 = loginRes.headers["set-cookie"];
+    const adminCookies = Array.isArray(rawCookies2) ? rawCookies2 : rawCookies2 ? [rawCookies2] : [];
     expect(adminCookies).toBeDefined();
 
     // Seed an import run directly
