@@ -18,3 +18,14 @@ export function jsonError(
     { status, headers: corsHeaders }
   );
 }
+
+export function jsonResponse(data: unknown, responseInit?: ResponseInit) {
+  const init = responseInit || {};
+  return NextResponse.json(data, {
+    ...init,
+    headers: {
+      ...corsHeaders,
+      ...init.headers,
+    },
+  });
+}

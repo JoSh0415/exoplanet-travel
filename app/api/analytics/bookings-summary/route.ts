@@ -1,13 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { bookingsSummaryQuerySchema } from "../../../lib/validators/analytics";
-import { jsonError } from "../../../lib/http";
-import { corsHeaders } from "@/app/lib/cors";
-import { Prisma } from "@prisma/client";
+import { jsonError, jsonResponse } from "../../../lib/http";
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
+import { Prisma } from "@prisma/client";
 
 /**
  * GET /api/analytics/bookings-summary?from=YYYY-MM-DD&to=YYYY-MM-DD&groupBy=day|month
@@ -62,42 +58,36 @@ export async function GET(req: NextRequest) {
   // Bookings by period (day or month) using raw SQL for date truncation
   const trunc = groupBy === "month" ? "month" : "day";
 
-  // Build WHERE clause for raw query
-  const conditions: string[] = [];
-  const params: (Date | string)[] = [];
-  let paramIdx = 1;
+  // Build WHERE clause safely using Prisma.sql
+  const conditions = [];
 
   if (from) {
-    conditions.push(`"bookingDate" >= $${paramIdx}`);
-    params.push(dateFilter.gte!);
-    paramIdx++;
+    conditions.push(Prisma.sql`"bookingDate" >= ${dateFilter.gte!}`);
   }
   if (to) {
-    conditions.push(`"bookingDate" <= $${paramIdx}`);
-    params.push(dateFilter.lte!);
-    paramIdx++;
+    conditions.push(Prisma.sql`"bookingDate" <= ${dateFilter.lte!}`);
   }
 
   const whereClause =
-    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    conditions.length > 0
+      ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`
+      : Prisma.empty;
 
   const byPeriodRaw: { period: Date; count: bigint }[] =
-    await prisma.$queryRawUnsafe(
-      `SELECT date_trunc('${trunc}', "bookingDate") AS period, COUNT("id")::bigint AS count
-       FROM "Booking"
-       ${whereClause}
-       GROUP BY period
-       ORDER BY period ASC`,
-      ...params
-    );
+    await prisma.$queryRaw(Prisma.sql`
+      SELECT date_trunc(${trunc}, "bookingDate") AS period, COUNT("id")::bigint AS count
+      FROM "Booking"
+      ${whereClause}
+      GROUP BY period
+      ORDER BY period ASC
+    `);
 
   const byPeriod = byPeriodRaw.map((row) => ({
     period: row.period.toISOString().slice(0, groupBy === "month" ? 7 : 10),
     count: Number(row.count),
   }));
 
-  return NextResponse.json(
-    { totalBookings, byTravelClass, byPeriod },
-    { headers: corsHeaders }
+  return jsonResponse(
+    { totalBookings, byTravelClass, byPeriod }
   );
 }

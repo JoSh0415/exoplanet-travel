@@ -1,12 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "../../lib/prisma";
 import { exoplanetsQuerySchema } from "../../lib/validators/exoplanets";
-import { jsonError } from "../../lib/http";
-import { corsHeaders } from "@/app/lib/cors";
-
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
+import { jsonError, jsonResponse } from "../../lib/http";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -62,11 +57,11 @@ export async function GET(req: NextRequest) {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  return NextResponse.json({
+  return jsonResponse({
     items,
     page,
     pageSize,
     total,
     totalPages,
-  }, { headers: corsHeaders });
+  });
 }

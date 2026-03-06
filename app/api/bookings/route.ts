@@ -1,13 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "../../lib/prisma";
-import { jsonError } from "../../lib/http";
+import { jsonError, jsonResponse } from "../../lib/http";
 import { createBookingSchema, listBookingsQuerySchema } from "../../lib/validators/bookings";
-import { corsHeaders } from "@/app/lib/cors";
-import { getSession } from "../../lib/auth";
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
+import { getSession } from "../../lib/auth";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -58,7 +54,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json(booking, { status: 201, headers: corsHeaders });
+  return jsonResponse(booking, { status: 201 });
 }
 
 export async function GET(req: NextRequest) {
@@ -120,11 +116,11 @@ export async function GET(req: NextRequest) {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  return NextResponse.json({
+  return jsonResponse({
     items,
     page,
     pageSize,
     total,
     totalPages,
-  }, { headers: corsHeaders });
+  });
 }

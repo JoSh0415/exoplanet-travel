@@ -1,10 +1,5 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "../../../lib/http";
 import { prisma } from "../../../lib/prisma";
-import { corsHeaders } from "@/app/lib/cors";
-
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
 
 /**
  * GET /api/analytics/vibes
@@ -41,5 +36,5 @@ export async function GET() {
     bookings: Number(row.bookings),
   }));
 
-  return NextResponse.json({ vibes, topBooked }, { headers: corsHeaders });
+  return jsonResponse({ vibes, topBooked });
 }

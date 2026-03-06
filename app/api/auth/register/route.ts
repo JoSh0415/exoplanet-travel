@@ -1,14 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prisma";
-import { jsonError } from "../../../lib/http";
+import { jsonError, jsonResponse } from "../../../lib/http";
 import { registerSchema } from "../../../lib/validators/auth";
 import { hashPassword, setSessionCookie } from "../../../lib/auth";
-import { corsHeaders } from "@/app/lib/cors";
-import { authRateLimiter } from "../../../lib/rateLimit";
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
+import { authRateLimiter } from "../../../lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   const ip = req.ip ?? req.headers.get("x-forwarded-for") ?? "unknown";
@@ -68,8 +64,7 @@ export async function POST(req: NextRequest) {
     role: user.role,
   });
 
-  return NextResponse.json(
-    { id: user.id, email: user.email, name: user.name, role: user.role },
-    { status: 201, headers: corsHeaders }
+  return jsonResponse(
+    { id: user.id, email: user.email, name: user.name, role: user.role }, { status: 201 }
   );
 }

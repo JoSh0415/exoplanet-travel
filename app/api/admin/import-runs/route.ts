@@ -1,13 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { getSession } from "../../../lib/auth";
-import { jsonError } from "../../../lib/http";
+import { jsonError, jsonResponse } from "../../../lib/http";
 import { importRunsQuerySchema } from "../../../lib/validators/admin";
-import { corsHeaders } from "@/app/lib/cors";
-
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -47,8 +42,7 @@ export async function GET(req: NextRequest) {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  return NextResponse.json(
-    { items, page, pageSize, total, totalPages },
-    { headers: corsHeaders }
+  return jsonResponse(
+    { items, page, pageSize, total, totalPages }
   );
 }

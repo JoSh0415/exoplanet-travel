@@ -1,12 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prisma";
-import { jsonError } from "../../../lib/http";
-import { corsHeaders } from "@/app/lib/cors";
-import { validateId } from "../../../lib/validators/common";
+import { jsonError, jsonResponse } from "../../../lib/http";
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
+import { validateId } from "../../../lib/validators/common";
 
 export async function GET(
   _req: NextRequest,
@@ -36,5 +32,5 @@ export async function GET(
     return jsonError(404, "NOT_FOUND", "Exoplanet not found");
   }
 
-  return NextResponse.json(planet, { headers: corsHeaders });
+  return jsonResponse(planet);
 }

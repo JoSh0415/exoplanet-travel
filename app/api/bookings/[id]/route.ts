@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
-import { jsonError } from "../../../lib/http";
+import { jsonError, jsonResponse } from "../../../lib/http";
 import { updateBookingSchema } from "../../../lib/validators/bookings";
 import { validateId } from "../../../lib/validators/common";
-import { corsHeaders } from "@/app/lib/cors";
+
 import { getSession } from "../../../lib/auth";
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
+async function verifyBookingAccess(id: string, session: { userId: string; role: string }, action: string) {
+  const existing = await prisma.booking.findUnique({
+    where: { id },
+    select: { userId: true },
+  });
+
+  if (!existing) {
+    return { error: jsonError(404, "NOT_FOUND", "Booking not found") };
+  }
+
+  if (existing.userId !== session.userId && session.role !== "ADMIN") {
+    return { error: jsonError(403, "FORBIDDEN", `You can only ${action} your own bookings`) };
+  }
+
+  return { existing };
 }
 
 export async function PATCH(
@@ -26,19 +39,8 @@ export async function PATCH(
     return jsonError(400, "VALIDATION_ERROR", "Invalid booking id");
   }
 
-  // Fetch the booking to check ownership
-  const existing = await prisma.booking.findUnique({
-    where: { id },
-    select: { userId: true },
-  });
-
-  if (!existing) {
-    return jsonError(404, "NOT_FOUND", "Booking not found");
-  }
-
-  if (existing.userId !== session.userId && session.role !== "ADMIN") {
-    return jsonError(403, "FORBIDDEN", "You can only modify your own bookings");
-  }
+  const access = await verifyBookingAccess(id, session, "modify");
+  if (access.error) return access.error;
 
   let body: unknown;
   try {
@@ -79,7 +81,7 @@ export async function PATCH(
     },
   });
 
-  return NextResponse.json(updated, { status: 200, headers: corsHeaders });
+  return jsonResponse(updated, { status: 200 });
 }
 
 export async function DELETE(
@@ -98,20 +100,9 @@ export async function DELETE(
     return jsonError(400, "VALIDATION_ERROR", "Invalid booking id");
   }
 
-  // Fetch the booking to check ownership
-  const existing = await prisma.booking.findUnique({
-    where: { id },
-    select: { userId: true },
-  });
-
-  if (!existing) {
-    return jsonError(404, "NOT_FOUND", "Booking not found");
-  }
-
-  if (existing.userId !== session.userId && session.role !== "ADMIN") {
-    return jsonError(403, "FORBIDDEN", "You can only delete your own bookings");
-  }
+  const access = await verifyBookingAccess(id, session, "delete");
+  if (access.error) return access.error;
 
   await prisma.booking.delete({ where: { id } });
-  return new NextResponse(null, { status: 204, headers: corsHeaders });
+  return new NextResponse(null, { status: 204 });
 }
