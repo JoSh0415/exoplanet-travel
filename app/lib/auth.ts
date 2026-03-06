@@ -12,6 +12,7 @@ export type SessionPayload = {
   userId: string;
   email: string;
   name: string | null;
+  role: string;
 };
 
 export async function hashPassword(password: string): Promise<string> {

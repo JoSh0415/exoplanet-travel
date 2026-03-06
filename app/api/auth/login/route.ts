@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
       id: true,
       email: true,
       name: true,
+      role: true,
       passwordHash: true,
     },
   });
@@ -52,10 +53,11 @@ export async function POST(req: NextRequest) {
     userId: user.id,
     email: user.email,
     name: user.name,
+    role: user.role,
   });
 
   return NextResponse.json(
-    { id: user.id, email: user.email, name: user.name },
+    { id: user.id, email: user.email, name: user.name, role: user.role },
     { status: 200, headers: corsHeaders }
   );
 }

@@ -28,6 +28,7 @@ export async function resetDb() {
   await prisma.booking.deleteMany();
   await prisma.user.deleteMany();
   await prisma.exoplanet.deleteMany();
+  await prisma.dataImportRun.deleteMany();
 }
 
 export async function seedMinimalData() {

@@ -3,12 +3,18 @@ import { prisma } from "../../lib/prisma";
 import { jsonError } from "../../lib/http";
 import { createBookingSchema, listBookingsQuerySchema } from "../../lib/validators/bookings";
 import { corsHeaders } from "@/app/lib/cors";
+import { getSession } from "../../lib/auth";
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session) {
+    return jsonError(401, "UNAUTHORIZED", "Authentication required");
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -26,14 +32,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { userId, planetId, travelClass } = parsed.data;
+  const { planetId, travelClass } = parsed.data;
+  const userId = session.userId;
 
-  const [user, planet] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
-    prisma.exoplanet.findUnique({ where: { id: planetId }, select: { id: true } }),
-  ]);
+  const planet = await prisma.exoplanet.findUnique({
+    where: { id: planetId },
+    select: { id: true },
+  });
 
-  if (!user) return jsonError(404, "NOT_FOUND", "User not found");
   if (!planet) return jsonError(404, "NOT_FOUND", "Exoplanet not found");
 
   const booking = await prisma.booking.create({
@@ -55,6 +61,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const session = await getSession();
+  if (!session) {
+    return jsonError(401, "UNAUTHORIZED", "Authentication required");
+  }
+
   const url = new URL(req.url);
   const queryObj = Object.fromEntries(url.searchParams.entries());
 
@@ -63,10 +74,13 @@ export async function GET(req: NextRequest) {
     return jsonError(400, "VALIDATION_ERROR", "Invalid query parameters", parsed.error.flatten());
   }
 
-  const { page, pageSize, userId } = parsed.data;
+  const { page, pageSize } = parsed.data;
 
+  // Non-admin users see only their own bookings
   const where: { userId?: string } = {};
-  if (userId) where.userId = userId;
+  if (session.role !== "ADMIN") {
+    where.userId = session.userId;
+  }
 
   const skip = (page - 1) * pageSize;
   const take = pageSize;

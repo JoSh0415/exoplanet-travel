@@ -28,6 +28,8 @@ tags:
     description: Browse exoplanet catalogue and retrieve planet details.
   - name: Bookings
     description: Create and manage travel bookings.
+  - name: Analytics
+    description: Aggregated statistics for dashboards and charts.
 
 paths:
   /api/exoplanets:
@@ -117,22 +119,18 @@ paths:
       tags: [Bookings]
       operationId: listBookings
       summary: List bookings
+      security:
+        - cookieAuth: []
       description: |
         Returns a paginated list of bookings.
 
-        ### Typical usage
-        - "My bookings" page (filter by `userId`)
-        - Admin view of all bookings (no filter)
+        - **Regular users** see only their own bookings.
+        - **Admins** see all bookings across users.
+
+        Requires a valid session cookie.
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
-        - in: query
-          name: userId
-          description: Optional filter for bookings belonging to a user.
-          schema:
-            type: string
-            minLength: 10
-          example: cmlp...userId
       responses:
         "200":
           description: Paginated list of bookings
@@ -142,17 +140,20 @@ paths:
                 $ref: "#/components/schemas/PaginatedBookingsResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     post:
       tags: [Bookings]
       operationId: createBooking
       summary: Create a booking
+      security:
+        - cookieAuth: []
       description: |
-        Creates a booking for a user to travel to a selected exoplanet.
+        Creates a booking for the authenticated user to travel to a selected exoplanet.
 
-        ### Notes
-        - In the current implementation, `userId` is provided in the request body.
-        - In a future version, `userId` would be derived from authentication (JWT/session).
+        The `userId` is derived from the session cookie — do not include it in the body.
+        Requires a valid session cookie.
       requestBody:
         required: true
         content:
@@ -163,7 +164,6 @@ paths:
               example:
                 summary: Create booking
                 value:
-                  userId: cmlp...user
                   planetId: cmlp...planet
                   travelClass: Economy (Cryo-Sleep)
       responses:
@@ -175,6 +175,8 @@ paths:
                 $ref: "#/components/schemas/Booking"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -183,12 +185,14 @@ paths:
       tags: [Bookings]
       operationId: updateBooking
       summary: Update a booking (partial)
+      security:
+        - cookieAuth: []
       description: |
         Partially updates a booking.
 
-        ### Typical usage
-        - Change travel class
-        - (Optional future improvement) Update booking status
+        - Only the **booking owner** or an **ADMIN** can update a booking.
+        - Returns `403 Forbidden` if the user is neither owner nor admin.
+        - Requires a valid session cookie.
       parameters:
         - $ref: "#/components/parameters/IdPathParam"
       requestBody:
@@ -211,6 +215,10 @@ paths:
                 $ref: "#/components/schemas/Booking"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -218,10 +226,15 @@ paths:
       tags: [Bookings]
       operationId: deleteBooking
       summary: Delete a booking
+      security:
+        - cookieAuth: []
       description: |
         Deletes a booking.
 
-        Returns `204 No Content` on success.
+        - Only the **booking owner** or an **ADMIN** can delete a booking.
+        - Returns `403 Forbidden` if the user is neither owner nor admin.
+        - Requires a valid session cookie.
+        - Returns `204 No Content` on success.
       parameters:
         - $ref: "#/components/parameters/IdPathParam"
       responses:
@@ -229,10 +242,124 @@ paths:
           description: Deleted successfully (no content)
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/analytics/vibes:
+    get:
+      tags: [Analytics]
+      operationId: getVibeAnalytics
+      summary: Vibe distribution analytics
+      description: |
+        Returns two arrays:
+        - `vibes` – count of exoplanets per vibe category.
+        - `topBooked` – vibes ranked by total booking count.
+      responses:
+        "200":
+          description: Vibe analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VibesResponse"
+              examples:
+                example:
+                  summary: Vibe breakdown
+                  value:
+                    vibes:
+                      - vibe: Habitable Paradise
+                        count: 42
+                      - vibe: Molten Rock
+                        count: 38
+                    topBooked:
+                      - vibe: Habitable Paradise
+                        bookings: 120
+                      - vibe: Mysterious
+                        bookings: 78
+
+  /api/analytics/top-destinations:
+    get:
+      tags: [Analytics]
+      operationId: getTopDestinations
+      summary: Top-booked destinations
+      description: |
+        Returns the most popular exoplanets ranked by total booking count.
+      parameters:
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Top destinations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopDestinationsResponse"
+              examples:
+                example:
+                  summary: Top 3 destinations
+                  value:
+                    destinations:
+                      - planetId: abc123
+                        name: HD 219134 c
+                        distance: 21.3
+                        vibe: Molten Rock
+                        bookings: 45
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/analytics/bookings-summary:
+    get:
+      tags: [Analytics]
+      operationId: getBookingsSummary
+      summary: Booking summary statistics
+      description: |
+        Returns:
+        - `totalBookings` – overall count.
+        - `byTravelClass` – breakdown by travel class.
+        - `byPeriod` – time-series data grouped by day or month.
+
+        Use `from`/`to` to restrict the date range.
+      parameters:
+        - $ref: "#/components/parameters/FromParam"
+        - $ref: "#/components/parameters/ToParam"
+        - $ref: "#/components/parameters/GroupByParam"
+      responses:
+        "200":
+          description: Booking summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingsSummaryResponse"
+              examples:
+                example:
+                  summary: Monthly summary
+                  value:
+                    totalBookings: 256
+                    byTravelClass:
+                      - travelClass: Economy (Cryo-Sleep)
+                        count: 180
+                      - travelClass: First Class (Warp Drive)
+                        count: 76
+                    byPeriod:
+                      - period: "2025-01"
+                        count: 120
+                      - period: "2025-02"
+                        count: 136
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: exo-session
+      description: |
+        JWT session token stored in an httpOnly cookie named `exo-session`.
+        Obtain by calling POST /api/auth/login or POST /api/auth/register.
+
   parameters:
     IdPathParam:
       in: path
@@ -317,6 +444,44 @@ components:
         enum: [asc, desc]
         default: asc
 
+    LimitParam:
+      in: query
+      name: limit
+      description: Maximum number of results to return (1-100).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      example: 10
+
+    FromParam:
+      in: query
+      name: from
+      description: Start date filter (YYYY-MM-DD, inclusive).
+      schema:
+        type: string
+        pattern: '^\d{4}-\d{2}-\d{2}$'
+      example: "2025-01-01"
+
+    ToParam:
+      in: query
+      name: to
+      description: End date filter (YYYY-MM-DD, inclusive).
+      schema:
+        type: string
+        pattern: '^\d{4}-\d{2}-\d{2}$'
+      example: "2025-12-31"
+
+    GroupByParam:
+      in: query
+      name: groupBy
+      description: Time granularity for the `byPeriod` array.
+      schema:
+        type: string
+        enum: [day, month]
+        default: day
+
   responses:
     BadRequest:
       description: Validation error (invalid parameters or body)
@@ -347,6 +512,32 @@ components:
                 error:
                   code: NOT_FOUND
                   message: Resource not found
+
+    Unauthorized:
+      description: Authentication required (no valid session cookie)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            example:
+              value:
+                error:
+                  code: UNAUTHORIZED
+                  message: Authentication required
+
+    Forbidden:
+      description: Insufficient permissions (not owner or admin)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            example:
+              value:
+                error:
+                  code: FORBIDDEN
+                  message: You can only modify your own bookings
 
   schemas:
     Exoplanet:
@@ -402,11 +593,8 @@ components:
 
     CreateBookingRequest:
       type: object
-      required: [userId, planetId, travelClass]
+      required: [planetId, travelClass]
       properties:
-        userId:
-          type: string
-          description: User id (temporary until authentication is implemented).
         planetId:
           type: string
           description: Exoplanet id.
@@ -498,3 +686,80 @@ components:
             details:
               nullable: true
               description: Optional validation or debug details.
+
+    VibesResponse:
+      type: object
+      required: [vibes, topBooked]
+      properties:
+        vibes:
+          type: array
+          items:
+            type: object
+            required: [vibe, count]
+            properties:
+              vibe:
+                type: string
+                nullable: true
+              count:
+                type: integer
+        topBooked:
+          type: array
+          items:
+            type: object
+            required: [vibe, bookings]
+            properties:
+              vibe:
+                type: string
+                nullable: true
+              bookings:
+                type: integer
+
+    TopDestinationsResponse:
+      type: object
+      required: [destinations]
+      properties:
+        destinations:
+          type: array
+          items:
+            type: object
+            required: [planetId, name, distance, vibe, bookings]
+            properties:
+              planetId:
+                type: string
+              name:
+                type: string
+              distance:
+                type: number
+              vibe:
+                type: string
+                nullable: true
+              bookings:
+                type: integer
+
+    BookingsSummaryResponse:
+      type: object
+      required: [totalBookings, byTravelClass, byPeriod]
+      properties:
+        totalBookings:
+          type: integer
+        byTravelClass:
+          type: array
+          items:
+            type: object
+            required: [travelClass, count]
+            properties:
+              travelClass:
+                type: string
+              count:
+                type: integer
+        byPeriod:
+          type: array
+          items:
+            type: object
+            required: [period, count]
+            properties:
+              period:
+                type: string
+                description: Date string (YYYY-MM-DD or YYYY-MM).
+              count:
+                type: integer

@@ -6,74 +6,10 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import axios from 'axios';
-import { parse } from 'csv-parse/sync';
 import { hashSync } from 'bcryptjs';
-import { calculateGravity, determineVibe } from '../app/lib/planetMath';
+import { importExoplanets } from '../app/lib/nasaImport';
 
 const prisma = new PrismaClient();
-
-interface NasaExoplanetRaw {
-    pl_name: string;
-    sy_dist: string;
-    pl_eqt: string;
-    pl_masse: string;
-    pl_rade: string;
-    disc_year: string;
-}
-
-interface ProcessedPlanet {
-    name: string;
-    distance: number;
-    temperature: number | null;
-    gravity: number | null;
-    vibe: string;
-    discoveryYear: number | null;
-}
-
-function toNumberOrNull(value: string) {
-    if (!value || value.trim() === '') return null;
-    const num = parseFloat(value);
-    return isNaN(num) ? null : num;
-}
-
-async function fetchAndNormalizePlanets(): Promise<ProcessedPlanet[]> {    
-    const query = "select pl_name,sy_dist,pl_eqt,pl_masse,pl_rade,disc_year from ps where default_flag=1 and sy_dist is not null and pl_rade is not null order by sy_dist asc";
-    const url = `https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=${encodeURIComponent(query)}&format=csv`;
-
-    try {
-        const { data } = await axios.get(url);
-        
-        const records: NasaExoplanetRaw[] = parse(data, {
-            columns: true,
-            skip_empty_lines: true,
-            trim: true,
-        });
-        
-        const limit = Number(process.env.SEED_PLANET_LIMIT ?? 500);
-        const selected = records.slice(0, limit);
-
-        return selected.map((record) => {
-            const mass = toNumberOrNull(record.pl_masse);
-            const radius = toNumberOrNull(record.pl_rade);
-            const temp = toNumberOrNull(record.pl_eqt);
-            const distParsecs = parseFloat(record.sy_dist);
-
-            return {
-                name: record.pl_name,
-                distance: parseFloat((distParsecs * 3.26156).toFixed(2)),
-                temperature: temp,
-                gravity: calculateGravity(mass, radius),
-                vibe: determineVibe(temp, radius),
-                discoveryYear: parseInt(record.disc_year) || null,
-            };
-        });
-
-    } catch (error) {
-        console.error("Error fetching data:", error);
-        return [];
-    }
-}
 
 async function main() {
     console.log('Starting Seed');
@@ -82,19 +18,22 @@ async function main() {
         await prisma.booking.deleteMany();
         await prisma.user.deleteMany();
         await prisma.exoplanet.deleteMany();
+        await prisma.dataImportRun.deleteMany();
     }
 
-    const planetsData = await fetchAndNormalizePlanets();
-    
-    if (planetsData.length === 0) {
-        console.warn("No planets fetched.");
-        return;
-    }
-
-    await prisma.exoplanet.createMany({
-        data: planetsData,
-        skipDuplicates: true, 
+    const limit = Number(process.env.SEED_PLANET_LIMIT ?? 500);
+    const result = await importExoplanets(prisma, {
+        limit,
+        sourceName: 'NASA Exoplanet Archive (seed)',
     });
+
+    if (result.errorMessage) {
+        console.warn('Import had errors:', result.errorMessage);
+    }
+
+    console.log(
+        `Imported ${result.insertedCount} new, ${result.updatedCount} updated exoplanets.`
+    );
 
     const user1 = await prisma.user.create({
         data: {
@@ -109,6 +48,16 @@ async function main() {
             email: 'ripley@nostromo.corp',
             name: 'Ellen Ripley',
             passwordHash: hashSync('password123', 10),
+        },
+    });
+
+    // Create an admin user for demo / testing
+    await prisma.user.create({
+        data: {
+            email: 'admin@exoplanet.travel',
+            name: 'Admin',
+            role: 'ADMIN',
+            passwordHash: hashSync('admin123', 10),
         },
     });
 

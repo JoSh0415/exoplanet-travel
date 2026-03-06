@@ -24,8 +24,20 @@ model User {
   id            String    @id @default(cuid())
   email         String    @unique
   name          String?
+  role          String    @default("USER")
   passwordHash  String
   bookings      Booking[]
+}
+
+model DataImportRun {
+  id            String   @id @default(cuid())
+  sourceName    String
+  tapQuery      String
+  retrievedAt   DateTime
+  insertedCount Int
+  updatedCount  Int
+  errorMessage  String?
+  createdAt     DateTime @default(now())
 }
 
 model Booking {

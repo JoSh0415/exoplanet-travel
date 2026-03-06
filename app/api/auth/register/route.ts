@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
       id: true,
       email: true,
       name: true,
+      role: true,
     },
   });
 
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
     userId: user.id,
     email: user.email,
     name: user.name,
+    role: user.role,
   });
 
   return NextResponse.json(
