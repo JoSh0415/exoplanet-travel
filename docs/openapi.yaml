@@ -119,22 +119,18 @@ paths:
       tags: [Bookings]
       operationId: listBookings
       summary: List bookings
+      security:
+        - cookieAuth: []
       description: |
         Returns a paginated list of bookings.
 
-        ### Typical usage
-        - "My bookings" page (filter by `userId`)
-        - Admin view of all bookings (no filter)
+        - **Regular users** see only their own bookings.
+        - **Admins** see all bookings across users.
+
+        Requires a valid session cookie.
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
-        - in: query
-          name: userId
-          description: Optional filter for bookings belonging to a user.
-          schema:
-            type: string
-            minLength: 10
-          example: cmlp...userId
       responses:
         "200":
           description: Paginated list of bookings
@@ -144,17 +140,20 @@ paths:
                 $ref: "#/components/schemas/PaginatedBookingsResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     post:
       tags: [Bookings]
       operationId: createBooking
       summary: Create a booking
+      security:
+        - cookieAuth: []
       description: |
-        Creates a booking for a user to travel to a selected exoplanet.
+        Creates a booking for the authenticated user to travel to a selected exoplanet.
 
-        ### Notes
-        - In the current implementation, `userId` is provided in the request body.
-        - In a future version, `userId` would be derived from authentication (JWT/session).
+        The `userId` is derived from the session cookie — do not include it in the body.
+        Requires a valid session cookie.
       requestBody:
         required: true
         content:
@@ -165,7 +164,6 @@ paths:
               example:
                 summary: Create booking
                 value:
-                  userId: cmlp...user
                   planetId: cmlp...planet
                   travelClass: Economy (Cryo-Sleep)
       responses:
@@ -177,6 +175,8 @@ paths:
                 $ref: "#/components/schemas/Booking"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -185,12 +185,14 @@ paths:
       tags: [Bookings]
       operationId: updateBooking
       summary: Update a booking (partial)
+      security:
+        - cookieAuth: []
       description: |
         Partially updates a booking.
 
-        ### Typical usage
-        - Change travel class
-        - (Optional future improvement) Update booking status
+        - Only the **booking owner** or an **ADMIN** can update a booking.
+        - Returns `403 Forbidden` if the user is neither owner nor admin.
+        - Requires a valid session cookie.
       parameters:
         - $ref: "#/components/parameters/IdPathParam"
       requestBody:
@@ -213,6 +215,10 @@ paths:
                 $ref: "#/components/schemas/Booking"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -220,10 +226,15 @@ paths:
       tags: [Bookings]
       operationId: deleteBooking
       summary: Delete a booking
+      security:
+        - cookieAuth: []
       description: |
         Deletes a booking.
 
-        Returns `204 No Content` on success.
+        - Only the **booking owner** or an **ADMIN** can delete a booking.
+        - Returns `403 Forbidden` if the user is neither owner nor admin.
+        - Requires a valid session cookie.
+        - Returns `204 No Content` on success.
       parameters:
         - $ref: "#/components/parameters/IdPathParam"
       responses:
@@ -231,6 +242,10 @@ paths:
           description: Deleted successfully (no content)
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -336,6 +351,15 @@ paths:
           $ref: "#/components/responses/BadRequest"
 
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: exo-session
+      description: |
+        JWT session token stored in an httpOnly cookie named `exo-session`.
+        Obtain by calling POST /api/auth/login or POST /api/auth/register.
+
   parameters:
     IdPathParam:
       in: path
@@ -489,6 +513,32 @@ components:
                   code: NOT_FOUND
                   message: Resource not found
 
+    Unauthorized:
+      description: Authentication required (no valid session cookie)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            example:
+              value:
+                error:
+                  code: UNAUTHORIZED
+                  message: Authentication required
+
+    Forbidden:
+      description: Insufficient permissions (not owner or admin)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            example:
+              value:
+                error:
+                  code: FORBIDDEN
+                  message: You can only modify your own bookings
+
   schemas:
     Exoplanet:
       type: object
@@ -543,11 +593,8 @@ components:
 
     CreateBookingRequest:
       type: object
-      required: [userId, planetId, travelClass]
+      required: [planetId, travelClass]
       properties:
-        userId:
-          type: string
-          description: User id (temporary until authentication is implemented).
         planetId:
           type: string
           description: Exoplanet id.

@@ -157,23 +157,21 @@ Returns a single exoplanet object:
 
 # GET /api/bookings
 
-Purpose: List bookings. Optionally filter by userId.
+Purpose: List bookings for the authenticated user.
+
+**Authentication:** Requires a valid `exo-session` cookie.
+
+- **Regular users** see only their own bookings.
+- **Admins** see all bookings across users.
 
 ## Query parameters
 - page (integer, default 1)
 - pageSize (integer, default 20, max 100)
-- userId (string, optional): Filter bookings for a given user
 
 ## Example requests
 
-List all bookings:
-    curl -s "http://localhost:3000/api/bookings?page=1&pageSize=10" | jq
-
-Filter by userId:
-    curl -s "http://localhost:3000/api/bookings?userId=cmlp9k8ut00dwdskud6g70sxc" | jq
-
-Tip: obtain a userId (if you seeded users) via Prisma Studio:
-    npx prisma studio
+List my bookings (uses session cookie for auth):
+    curl -s -b cookies.txt "http://localhost:3000/api/bookings?page=1&pageSize=10" | jq
 
 ## Success response (200)
 Returns a paginated list of bookings including user and planet summary info:
@@ -206,17 +204,17 @@ Returns a paginated list of bookings including user and planet summary info:
 
 ## Error responses
 - 400: Invalid query parameters
+- 401: Authentication required (no valid session cookie)
 
 \newpage
 
 # POST /api/bookings
 
-Purpose: Create a booking for a user to travel to an exoplanet.
+Purpose: Create a booking for the authenticated user to travel to an exoplanet.
 
-Note: In the current implementation, userId is supplied in the request body. In a future version, userId would typically come from authentication (JWT/session).
+**Authentication:** Requires a valid `exo-session` cookie. The `userId` is derived from the session — do not include it in the request body.
 
 ## Request body fields
-- userId (string): User id
 - planetId (string): Exoplanet id
 - travelClass (string): Travel class label (e.g. "Economy (Cryo-Sleep)")
 
@@ -224,7 +222,8 @@ Note: In the current implementation, userId is supplied in the request body. In 
 
     curl -s -X POST "http://localhost:3000/api/bookings" \
       -H "Content-Type: application/json" \
-      -d '{"userId":"cmlp9k8ut00dwdskud6g70sxc","planetId":"cmlp9k8qn0007dskuhej1ifkh","travelClass":"Economy (Cryo-Sleep)"}' | jq
+      -b cookies.txt \
+      -d '{"planetId":"cmlp9k8qn0007dskuhej1ifkh","travelClass":"Economy (Cryo-Sleep)"}' | jq
 
 ## Success response (201)
 Returns the created booking:
@@ -239,13 +238,16 @@ Returns the created booking:
 
 ## Error responses
 - 400: Invalid JSON or validation error
-- 404: User or exoplanet not found
+- 401: Authentication required (no valid session cookie)
+- 404: Exoplanet not found
 
 \newpage
 
 # PATCH /api/bookings/{id}
 
 Purpose: Partially update a booking (e.g., change travel class).
+
+**Authentication:** Requires a valid `exo-session` cookie. Only the **booking owner** or an **ADMIN** can update a booking.
 
 ## Path parameters
 - id (string): Booking id
@@ -258,12 +260,8 @@ Provide at least one field:
 
     curl -s -X PATCH "http://localhost:3000/api/bookings/cmlp9k90d00dzdskuje80hqav" \
       -H "Content-Type: application/json" \
+      -b cookies.txt \
       -d '{"travelClass":"First Class (Warp Drive)"}' | jq
-
-Validation error example (empty update payload):
-    curl -i -X PATCH "http://localhost:3000/api/bookings/cmlp9k90d00dzdskuje80hqav" \
-      -H "Content-Type: application/json" \
-      -d "{}"
 
 ## Success response (200)
 Returns the updated booking:
@@ -278,6 +276,8 @@ Returns the updated booking:
 
 ## Error responses
 - 400: Invalid id or invalid payload
+- 401: Authentication required (no valid session cookie)
+- 403: Forbidden — you can only modify your own bookings
 - 404: Booking not found
 
 \newpage
@@ -286,18 +286,23 @@ Returns the updated booking:
 
 Purpose: Delete a booking.
 
+**Authentication:** Requires a valid `exo-session` cookie. Only the **booking owner** or an **ADMIN** can delete a booking.
+
 ## Path parameters
 - id (string): Booking id
 
 ## Example request
 
-    curl -i -X DELETE "http://localhost:3000/api/bookings/cmlp9k90d00dzdskuje80hqav"
+    curl -i -X DELETE "http://localhost:3000/api/bookings/cmlp9k90d00dzdskuje80hqav" \
+      -b cookies.txt
 
 ## Success response (204)
 No response body.
 
 ## Error responses
 - 400: Invalid id
+- 401: Authentication required (no valid session cookie)
+- 403: Forbidden — you can only delete your own bookings
 - 404: Booking not found
 
 \newpage
