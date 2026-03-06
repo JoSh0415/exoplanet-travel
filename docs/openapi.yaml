@@ -28,6 +28,10 @@ tags:
     description: Browse exoplanet catalogue and retrieve planet details.
   - name: Bookings
     description: Create and manage travel bookings.
+  - name: Auth
+    description: User registration, login, logout, and session management.
+  - name: Admin
+    description: Admin-only endpoints for data import management.
   - name: Analytics
     description: Aggregated statistics for dashboards and charts.
 
@@ -248,6 +252,210 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Register a new user
+      description: |
+        Creates a new user account and sets a session cookie.
+
+        - Email is stored as lowercase.
+        - Returns `409` if the email is already registered.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            examples:
+              example:
+                summary: Register a user
+                value:
+                  email: user@example.com
+                  password: securePass123
+                  name: Jane Doe
+      responses:
+        "201":
+          description: User created and session set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPublic"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                example:
+                  value:
+                    error:
+                      code: EMAIL_EXISTS
+                      message: An account with this email already exists
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Log in with email and password
+      description: |
+        Authenticates a user and sets an httpOnly session cookie (`exo-session`).
+
+        Returns `401` if the email or password is invalid.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            examples:
+              example:
+                summary: Login
+                value:
+                  email: user@example.com
+                  password: securePass123
+      responses:
+        "200":
+          description: Login successful (session cookie set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPublic"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                example:
+                  value:
+                    error:
+                      code: INVALID_CREDENTIALS
+                      message: Invalid email or password
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      operationId: getMe
+      summary: Get currently authenticated user
+      description: |
+        Returns the currently authenticated user based on the session cookie.
+
+        If no valid session cookie is present, returns `{ user: null }` (still 200).
+      responses:
+        "200":
+          description: Current user (or null if unauthenticated)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    nullable: true
+                    allOf:
+                      - $ref: "#/components/schemas/SessionUser"
+              examples:
+                authenticated:
+                  summary: Logged-in user
+                  value:
+                    user:
+                      id: abc123
+                      email: user@example.com
+                      name: Jane Doe
+                      role: USER
+                unauthenticated:
+                  summary: No session
+                  value:
+                    user: null
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Log out (clear session cookie)
+      description: |
+        Clears the session cookie. Returns `{ success: true }`.
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+              examples:
+                example:
+                  value:
+                    success: true
+
+  /api/admin/refresh-exoplanets:
+    post:
+      tags: [Admin]
+      operationId: refreshExoplanets
+      summary: Import/refresh exoplanets from NASA
+      security:
+        - cookieAuth: []
+      description: |
+        Triggers a fresh import from the NASA Exoplanet Archive TAP service.
+        Upserts planets (insert new, update existing) and records the import run.
+
+        - Requires ADMIN role.
+        - Returns `207` if the import completed with errors.
+      responses:
+        "200":
+          description: Import completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshResult"
+        "207":
+          description: Import completed with errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/import-runs:
+    get:
+      tags: [Admin]
+      operationId: listImportRuns
+      summary: List data import runs
+      security:
+        - cookieAuth: []
+      description: |
+        Returns a paginated list of data import run records.
+
+        - Requires ADMIN role.
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: Paginated list of import runs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedImportRunsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /api/analytics/vibes:
     get:
@@ -572,7 +780,7 @@ components:
 
     Booking:
       type: object
-      required: [id, userId, planetId, travelClass, bookingDate]
+      required: [id, userId, planetId, travelClass, status, bookingDate]
       properties:
         id:
           type: string
@@ -586,6 +794,9 @@ components:
         travelClass:
           type: string
           description: Travel class label chosen by the user.
+        status:
+          type: string
+          description: Booking status (e.g. CONFIRMED, CANCELLED).
         bookingDate:
           type: string
           format: date-time
@@ -609,6 +820,9 @@ components:
         travelClass:
           type: string
           description: Updated travel class selection.
+        status:
+          type: string
+          description: Updated booking status.
 
     PaginatedExoplanetsResponse:
       type: object
@@ -654,6 +868,9 @@ components:
           format: date-time
         travelClass:
           type: string
+        status:
+          type: string
+          description: Booking status.
         user:
           type: object
           properties:
@@ -735,6 +952,123 @@ components:
                 nullable: true
               bookings:
                 type: integer
+
+    RegisterRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email (stored lowercase).
+        password:
+          type: string
+          minLength: 6
+          description: Password (min 6 characters).
+        name:
+          type: string
+          description: Display name.
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    UserPublic:
+      type: object
+      required: [id, email, role]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [USER, ADMIN]
+
+    SessionUser:
+      type: object
+      required: [id, email, role]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [USER, ADMIN]
+
+    RefreshResult:
+      type: object
+      required: [created, updated, errors]
+      properties:
+        created:
+          type: integer
+          description: Number of new exoplanets inserted.
+        updated:
+          type: integer
+          description: Number of existing exoplanets updated.
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              planet:
+                type: string
+              error:
+                type: string
+
+    DataImportRun:
+      type: object
+      required: [id, startedAt, finishedAt, status, planetsCreated, planetsUpdated, errors]
+      properties:
+        id:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [SUCCESS, PARTIAL, FAILED]
+        planetsCreated:
+          type: integer
+        planetsUpdated:
+          type: integer
+        errors:
+          nullable: true
+          description: JSON array of error objects (if any).
+
+    PaginatedImportRunsResponse:
+      type: object
+      required: [items, page, pageSize, total, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataImportRun"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
 
     BookingsSummaryResponse:
       type: object

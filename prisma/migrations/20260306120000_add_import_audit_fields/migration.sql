@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "DataImportRun" ADD COLUMN "totalFetched" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "DataImportRun" ADD COLUMN "skippedCount" INTEGER NOT NULL DEFAULT 0;

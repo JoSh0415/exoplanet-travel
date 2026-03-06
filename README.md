@@ -104,16 +104,36 @@ The test setup requires `TEST_DATABASE_URL` and will refuse to run destructive D
 
 ### Bookings (Full CRUD)
 - `POST /api/bookings`  
-  Create a booking (JSON body: `userId`, `planetId`, `travelClass`)
+  Create a booking (JSON body: `planetId`, `travelClass`). The `userId` is taken from the authenticated session.
 
 - `GET /api/bookings`  
-  Paginated list; optional filter `userId`
+  Paginated list; optional filter `userId`. Admins can see all bookings.
 
 - `PATCH /api/bookings/{id}`  
-  Partial update (currently supports `travelClass`)
+  Partial update (supports `travelClass`, `status`)
 
 - `DELETE /api/bookings/{id}`  
   Delete a booking (returns `204 No Content`)
+
+### Auth
+- `POST /api/auth/register`  
+  Register a new user (JSON body: `email`, `password`, `name`). Sets session cookie.
+
+- `POST /api/auth/login`  
+  Log in with `email` and `password`. Sets session cookie.
+
+- `POST /api/auth/logout`  
+  Clear the session cookie.
+
+- `GET /api/auth/me`  
+  Get the currently authenticated user (or `null` if not logged in).
+
+### Admin (requires ADMIN role)
+- `POST /api/admin/refresh-exoplanets`  
+  Trigger a fresh import from the NASA Exoplanet Archive.
+
+- `GET /api/admin/import-runs`  
+  Paginated list of data import run records.
 
 ### Analytics
 - `GET /api/analytics/bookings-summary?from=YYYY-MM-DD&to=YYYY-MM-DD&groupBy=day|month`  

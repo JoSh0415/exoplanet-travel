@@ -66,6 +66,7 @@ export async function PATCH(
       id: true,
       bookingDate: true,
       travelClass: true,
+      status: true,
       userId: true,
       planetId: true,
     },

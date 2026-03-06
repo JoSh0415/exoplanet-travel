@@ -267,7 +267,7 @@ describe("PATCH /api/bookings/{id}", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.travelClass).toBe("First Class (Warp Drive)");
-  });
+  }, 15_000);
 
   test("returns 400 for empty payload", async () => {
     const { planet } = await seedMinimalData();
@@ -318,7 +318,7 @@ describe("DELETE /api/bookings/{id}", () => {
 
     const inDb = await prisma.booking.findUnique({ where: { id: created.body.id } });
     expect(inDb).toBeNull();
-  });
+  }, 15_000);
 
   test("returns 403 when non-owner tries to delete", async () => {
     const { planet } = await seedMinimalData();

@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       userId: true,
       planetId: true,
       travelClass: true,
+      status: true,
       bookingDate: true,
     },
   });
@@ -96,6 +97,7 @@ export async function GET(req: NextRequest) {
         id: true,
         bookingDate: true,
         travelClass: true,
+        status: true,
         user: {
           select: {
             id: true,

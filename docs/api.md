@@ -56,11 +56,15 @@ All error responses follow this structure:
     }
 
 Common status codes:
-- 200 OK: Successful GET
-- 201 Created: Successful POST
+- 200 OK: Successful GET or POST
+- 201 Created: Successful resource creation
 - 204 No Content: Successful DELETE
+- 207 Multi-Status: Partial success (e.g. import with errors)
 - 400 Bad Request: Validation / malformed JSON
+- 401 Unauthorized: Authentication required (no valid session)
+- 403 Forbidden: Insufficient permissions (e.g. non-admin)
 - 404 Not Found: Resource does not exist
+- 409 Conflict: Resource already exists (e.g. duplicate email)
 
 \newpage
 
@@ -182,6 +186,7 @@ Returns a paginated list of bookings including user and planet summary info:
           "id": "cmlp9k90d00dzdskuje80hqav",
           "bookingDate": "2026-02-16T14:52:20.000Z",
           "travelClass": "Economy (Cryo-Sleep)",
+          "status": "CONFIRMED",
           "user": {
             "id": "cmlp9k8ut00dwdskud6g70sxc",
             "name": "Peter Quill",
@@ -233,6 +238,7 @@ Returns the created booking:
       "userId": "cmlp9k8ut00dwdskud6g70sxc",
       "planetId": "cmlp9k8qn0007dskuhej1ifkh",
       "travelClass": "Economy (Cryo-Sleep)",
+      "status": "CONFIRMED",
       "bookingDate": "2026-02-16T14:52:20.000Z"
     }
 
@@ -255,6 +261,7 @@ Purpose: Partially update a booking (e.g., change travel class).
 ## Request body
 Provide at least one field:
 - travelClass (string)
+- status (string)
 
 ## Example request
 
@@ -271,6 +278,7 @@ Returns the updated booking:
       "userId": "cmlp9k8ut00dwdskud6g70sxc",
       "planetId": "cmlp9k8qn0007dskuhej1ifkh",
       "travelClass": "First Class (Warp Drive)",
+      "status": "CONFIRMED",
       "bookingDate": "2026-02-16T14:52:20.000Z"
     }
 
@@ -304,6 +312,198 @@ No response body.
 - 401: Authentication required (no valid session cookie)
 - 403: Forbidden — you can only delete your own bookings
 - 404: Booking not found
+
+\newpage
+
+# POST /api/auth/register
+
+Purpose: Register a new user account.
+
+Sets an httpOnly `exo-session` cookie upon success.
+
+## Request body fields
+- email (string): User email (stored as lowercase)
+- password (string): Password (minimum 6 characters)
+- name (string): Display name
+
+## Example request
+
+    curl -s -X POST "http://localhost:3000/api/auth/register" \
+      -H "Content-Type: application/json" \
+      -c cookies.txt \
+      -d '{"email":"jane@example.com","password":"securePass123","name":"Jane Doe"}' | jq
+
+## Success response (201)
+Returns the created user (password is never returned):
+
+    {
+      "id": "cmlp9k8ut00dwdskud6g70sxc",
+      "email": "jane@example.com",
+      "name": "Jane Doe",
+      "role": "USER"
+    }
+
+## Error responses
+- 400: Validation error (e.g. missing fields, password too short)
+- 409: Email already exists
+
+\newpage
+
+# POST /api/auth/login
+
+Purpose: Authenticate with email and password.
+
+Sets an httpOnly `exo-session` cookie upon success.
+
+## Request body fields
+- email (string): User email
+- password (string): User password
+
+## Example request
+
+    curl -s -X POST "http://localhost:3000/api/auth/login" \
+      -H "Content-Type: application/json" \
+      -c cookies.txt \
+      -d '{"email":"jane@example.com","password":"securePass123"}' | jq
+
+## Success response (200)
+Returns the authenticated user:
+
+    {
+      "id": "cmlp9k8ut00dwdskud6g70sxc",
+      "email": "jane@example.com",
+      "name": "Jane Doe",
+      "role": "USER"
+    }
+
+## Error responses
+- 400: Validation error (e.g. missing fields)
+- 401: Invalid email or password
+
+\newpage
+
+# GET /api/auth/me
+
+Purpose: Get the currently authenticated user from the session cookie.
+
+No authentication is strictly required — returns `{ "user": null }` if no valid session is present.
+
+## Example request
+
+    curl -s -b cookies.txt "http://localhost:3000/api/auth/me" | jq
+
+## Success response (200)
+Returns the session user or null:
+
+    {
+      "user": {
+        "id": "cmlp9k8ut00dwdskud6g70sxc",
+        "email": "jane@example.com",
+        "name": "Jane Doe",
+        "role": "USER"
+      }
+    }
+
+If unauthenticated:
+
+    {
+      "user": null
+    }
+
+\newpage
+
+# POST /api/auth/logout
+
+Purpose: Clear the session cookie and log out.
+
+## Example request
+
+    curl -s -X POST "http://localhost:3000/api/auth/logout" -b cookies.txt | jq
+
+## Success response (200)
+
+    {
+      "success": true
+    }
+
+\newpage
+
+# POST /api/admin/refresh-exoplanets
+
+Purpose: Trigger a fresh import of exoplanets from the NASA Exoplanet Archive TAP service.
+
+**Authentication:** Requires a valid `exo-session` cookie with **ADMIN** role.
+
+The import upserts planets (inserts new, updates existing) and records a `DataImportRun`.
+
+## Example request
+
+    curl -s -X POST "http://localhost:3000/api/admin/refresh-exoplanets" \
+      -b cookies.txt | jq
+
+## Success response (200)
+
+    {
+      "created": 15,
+      "updated": 485,
+      "errors": []
+    }
+
+## Partial success response (207)
+Returned when the import completed but some planets failed:
+
+    {
+      "created": 10,
+      "updated": 480,
+      "errors": [
+        { "planet": "Unknown b", "error": "Missing required field" }
+      ]
+    }
+
+## Error responses
+- 401: Authentication required
+- 403: Forbidden — requires ADMIN role
+
+\newpage
+
+# GET /api/admin/import-runs
+
+Purpose: List data import run records (paginated).
+
+**Authentication:** Requires a valid `exo-session` cookie with **ADMIN** role.
+
+## Query parameters
+- page (integer, default 1)
+- pageSize (integer, default 20, max 100)
+
+## Example request
+
+    curl -s -b cookies.txt "http://localhost:3000/api/admin/import-runs?page=1&pageSize=10" | jq
+
+## Success response (200)
+
+    {
+      "items": [
+        {
+          "id": "cm...",
+          "startedAt": "2026-03-06T10:00:00.000Z",
+          "finishedAt": "2026-03-06T10:00:12.000Z",
+          "status": "SUCCESS",
+          "planetsCreated": 15,
+          "planetsUpdated": 485,
+          "errors": null
+        }
+      ],
+      "page": 1,
+      "pageSize": 10,
+      "total": 3,
+      "totalPages": 1
+    }
+
+## Error responses
+- 400: Invalid query parameters
+- 401: Authentication required
+- 403: Forbidden — requires ADMIN role
 
 \newpage
 
