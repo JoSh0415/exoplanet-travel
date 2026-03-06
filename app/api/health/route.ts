@@ -1,11 +1,12 @@
 import { prisma } from "../../lib/prisma";
 import { jsonResponse } from "../../lib/http";
+import { withErrorHandler } from "../../lib/routeHandler";
 
 /**
  * GET /api/health
  * Liveness / readiness probe — checks DB connectivity and reports uptime.
  */
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   let database: "connected" | "disconnected" = "disconnected";
 
   try {
@@ -27,4 +28,4 @@ export async function GET() {
     },
     { status: code }
   );
-}
+});

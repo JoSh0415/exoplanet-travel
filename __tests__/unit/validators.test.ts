@@ -1,6 +1,6 @@
 import { validateId } from "../../app/lib/validators/common";
 import { loginSchema, registerSchema } from "../../app/lib/validators/auth";
-import { createBookingSchema } from "../../app/lib/validators/bookings";
+import { createBookingSchema, updateBookingSchema, BOOKING_STATUSES } from "../../app/lib/validators/bookings";
 
 describe("Validators", () => {
   describe("Common ID Validator (cuid)", () => {
@@ -46,6 +46,14 @@ describe("Validators", () => {
       expect(res.success).toBe(true);
     });
 
+    it("should reject non-cuid planetId", () => {
+      const res = createBookingSchema.safeParse({
+        planetId: "not-a-cuid",
+        travelClass: "Economy"
+      });
+      expect(res.success).toBe(false);
+    });
+
     it("should strip out disallowed fields", () => {
       const res = createBookingSchema.safeParse({
         planetId: "cm4a2d3s8000008lc5a3s9f5q",
@@ -56,6 +64,23 @@ describe("Validators", () => {
       if (res.success) {
         expect((res.data as Record<string, unknown>).status).toBeUndefined(); // Assuming Zod defaults to stripping unknown properties
       }
+    });
+
+    it("should accept valid status values in update schema", () => {
+      for (const status of BOOKING_STATUSES) {
+        const res = updateBookingSchema.safeParse({ status });
+        expect(res.success).toBe(true);
+      }
+    });
+
+    it("should reject invalid status values in update schema", () => {
+      const res = updateBookingSchema.safeParse({ status: "APPROVED" });
+      expect(res.success).toBe(false);
+    });
+
+    it("should reject empty update payload", () => {
+      const res = updateBookingSchema.safeParse({});
+      expect(res.success).toBe(false);
     });
   });
 });

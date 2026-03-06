@@ -220,7 +220,7 @@ Purpose: Create a booking for the authenticated user to travel to an exoplanet.
 **Authentication:** Requires a valid `exo-session` cookie. The `userId` is derived from the session — do not include it in the request body.
 
 ## Request body fields
-- planetId (string): Exoplanet id (CUID format, min 10 characters)
+- planetId (string): Exoplanet id (CUID format)
 - travelClass (string): Travel class label, e.g. "Economy (Cryo-Sleep)" (1–60 characters)
 
 ## Example request
@@ -306,7 +306,7 @@ Purpose: Partially update a booking (e.g., change travel class).
 ## Request body
 Provide at least one field:
 - travelClass (string, 1–60 characters)
-- status (string, 1–30 characters)
+- status (enum: `CONFIRMED` | `CANCELLED`)
 
 **Note:** Non-admin users may only set `status` to `"CANCELLED"`. Setting any other status value as a non-admin returns 403 Forbidden.
 

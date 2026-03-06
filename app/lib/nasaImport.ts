@@ -114,21 +114,27 @@ export async function importExoplanets(
   try {
     const planets = await fetchAndNormalizePlanets(options.limit, tapQuery);
 
+    // Collect names that already exist in a single query (avoids N+1).
+    const existingNames = new Set(
+      (
+        await db.exoplanet.findMany({
+          where: { name: { in: planets.map((p) => p.name) } },
+          select: { name: true },
+        })
+      ).map((r) => r.name)
+    );
+
     for (const planet of planets) {
       try {
-        const existing = await db.exoplanet.findUnique({
+        await db.exoplanet.upsert({
           where: { name: planet.name },
-          select: { id: true },
+          create: planet,
+          update: planet,
         });
 
-        if (existing) {
-          await db.exoplanet.update({
-            where: { name: planet.name },
-            data: planet,
-          });
+        if (existingNames.has(planet.name)) {
           updatedCount++;
         } else {
-          await db.exoplanet.create({ data: planet });
           insertedCount++;
         }
       } catch (rowErr) {

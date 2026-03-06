@@ -880,7 +880,8 @@ components:
           description: Travel class label chosen by the user.
         status:
           type: string
-          description: Booking status (e.g. CONFIRMED, CANCELLED).
+          enum: [CONFIRMED, CANCELLED]
+          description: Booking status.
         bookingDate:
           type: string
           format: date-time
@@ -929,7 +930,7 @@ components:
       properties:
         planetId:
           type: string
-          minLength: 10
+          format: cuid
           description: Exoplanet id (CUID format).
         travelClass:
           type: string
@@ -951,8 +952,7 @@ components:
           description: Updated travel class selection.
         status:
           type: string
-          minLength: 1
-          maxLength: 30
+          enum: [CONFIRMED, CANCELLED]
           description: Updated booking status. Non-admin users may only set this to `CANCELLED`.
 
     PaginatedExoplanetsResponse:

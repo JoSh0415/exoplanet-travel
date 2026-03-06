@@ -29,9 +29,11 @@ This project provides:
     npm install
 
 ### 2) Configure environment variables
-Create a `.env` file (or set env vars in your environment):
+Copy the example file and fill in your values:
 
-    DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DB"
+    cp .env.example .env
+
+Then edit `.env` with your database credentials and a random JWT secret. See `.env.example` for all required variables.
 
 ### 3) Run database migrations
     npx prisma migrate dev
@@ -157,6 +159,9 @@ Navigate to **`/analytics`** (requires login) to view an interactive dashboard w
 
 ## 📚 API Documentation
 
+### Interactive (Swagger UI)
+Start the dev server and navigate to **`/swagger/`** for interactive API exploration powered by Swagger UI.
+
 ### Required PDF (submission artifact)
 - **PDF:** `docs/api.pdf`
 
@@ -185,8 +190,3 @@ Exoplanet data is retrieved from the Exoplanet Archive TAP service using a SQL-l
 
 ## 🔁 Development workflow
 This repository uses feature branches (e.g. `data-integration`, `api-core`, `docs-api`) and merges into `main` for stable milestones.
-
----
-
-## 🤖 GenAI usage
-Some development tasks were assisted by GenAI (e.g. scaffolding and documentation). A small set of example chat logs is included in the report appendix (as required by the coursework brief).
