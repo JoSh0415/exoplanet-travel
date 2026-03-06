@@ -75,8 +75,8 @@ Purpose: List exoplanets (catalogue page) with pagination, search, and filters.
 ## Query parameters
 - page (integer, default 1): Page number (1-indexed)
 - pageSize (integer, default 20, max 100): Items per page
-- q (string, optional): Case-insensitive substring search in planet name
-- vibe (string, optional): Filter by derived category (e.g., "Molten Rock", "Mysterious")
+- q (string, optional): Case-insensitive substring search in planet name (1–100 characters)
+- vibe (string, optional): Filter by derived category (e.g., "Molten Rock", "Mysterious") (1–60 characters)
 - minDistance (number, optional): Minimum distance in light years (inclusive)
 - maxDistance (number, optional): Maximum distance in light years (inclusive)
 - sort (distance | discoveryYear | name, default distance)
@@ -220,8 +220,8 @@ Purpose: Create a booking for the authenticated user to travel to an exoplanet.
 **Authentication:** Requires a valid `exo-session` cookie. The `userId` is derived from the session — do not include it in the request body.
 
 ## Request body fields
-- planetId (string): Exoplanet id
-- travelClass (string): Travel class label (e.g. "Economy (Cryo-Sleep)")
+- planetId (string): Exoplanet id (CUID format, min 10 characters)
+- travelClass (string): Travel class label, e.g. "Economy (Cryo-Sleep)" (1–60 characters)
 
 ## Example request
 
@@ -305,8 +305,10 @@ Purpose: Partially update a booking (e.g., change travel class).
 
 ## Request body
 Provide at least one field:
-- travelClass (string)
-- status (string)
+- travelClass (string, 1–60 characters)
+- status (string, 1–30 characters)
+
+**Note:** Non-admin users may only set `status` to `"CANCELLED"`. Setting any other status value as a non-admin returns 403 Forbidden.
 
 ## Example request
 
@@ -368,8 +370,8 @@ Sets an httpOnly `exo-session` cookie upon success.
 
 ## Request body fields
 - email (string): User email (stored as lowercase)
-- password (string): Password (minimum 8 characters)
-- name (string): Display name
+- password (string): Password (8–100 characters)
+- name (string): Display name (1–100 characters)
 
 ## Example request
 
@@ -592,7 +594,7 @@ Returns two arrays — planet counts per vibe and booking counts per vibe:
 Purpose: Get the most popular exoplanet destinations ranked by total booking count.
 
 ## Query parameters
-- limit (integer, default 10, max 100): Maximum number of destinations to return
+- limit (integer, default 10, min 1, max 100): Maximum number of destinations to return
 
 ## Example requests
 

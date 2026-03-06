@@ -229,7 +229,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Booking"
+                $ref: "#/components/schemas/BookingDetail"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -250,6 +250,7 @@ paths:
 
         - Only the **booking owner** or an **ADMIN** can update a booking.
         - Returns `403 Forbidden` if the user is neither owner nor admin.
+        - **Non-admin** users may only set `status` to `"CANCELLED"`; any other value returns `403`.
         - Requires a valid session cookie.
       parameters:
         - $ref: "#/components/parameters/IdPathParam"
@@ -651,10 +652,11 @@ components:
       in: path
       name: id
       required: true
-      description: Resource id (Prisma `cuid()`).
+      description: Resource id (Prisma CUID format, e.g. `c` followed by lowercase alphanumeric characters).
       schema:
         type: string
         minLength: 10
+        pattern: "^c[a-z0-9]+$"
       example: cmlp9k8qn0003dskufekwmztt
 
     PageParam:
@@ -681,17 +683,21 @@ components:
     SearchParam:
       in: query
       name: q
-      description: Case-insensitive substring search in planet name.
+      description: Case-insensitive substring search in planet name (1–100 characters).
       schema:
         type: string
+        minLength: 1
+        maxLength: 100
       example: gliese
 
     VibeParam:
       in: query
       name: vibe
-      description: Filter by derived category (e.g., "Molten Rock", "Mysterious").
+      description: Filter by derived category (e.g., "Molten Rock", "Mysterious"). 1–60 characters.
       schema:
         type: string
+        minLength: 1
+        maxLength: 60
       example: Molten Rock
 
     MinDistanceParam:
@@ -880,27 +886,74 @@ components:
           format: date-time
           description: Timestamp when the booking was created.
 
+    BookingDetail:
+      description: |
+        A booking with nested user and planet details.
+        Returned by GET /api/bookings/{id}.
+      allOf:
+        - $ref: "#/components/schemas/Booking"
+        - type: object
+          required: [user, planet]
+          properties:
+            user:
+              type: object
+              required: [id, name, email]
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                  nullable: true
+                email:
+                  type: string
+            planet:
+              type: object
+              required: [id, name, distance]
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                distance:
+                  type: number
+                vibe:
+                  type: string
+                  nullable: true
+                discoveryYear:
+                  type: integer
+                  nullable: true
+
     CreateBookingRequest:
       type: object
       required: [planetId, travelClass]
       properties:
         planetId:
           type: string
-          description: Exoplanet id.
+          minLength: 10
+          description: Exoplanet id (CUID format).
         travelClass:
           type: string
+          minLength: 1
+          maxLength: 60
           description: Travel class selection.
 
     UpdateBookingRequest:
       type: object
-      description: Provide at least one field to update.
+      description: |
+        Provide at least one field to update.
+        **Note:** Non-admin users may only set `status` to `"CANCELLED"`. Setting any
+        other status value as a non-admin returns `403 Forbidden`.
       properties:
         travelClass:
           type: string
+          minLength: 1
+          maxLength: 60
           description: Updated travel class selection.
         status:
           type: string
-          description: Updated booking status.
+          minLength: 1
+          maxLength: 30
+          description: Updated booking status. Non-admin users may only set this to `CANCELLED`.
 
     PaginatedExoplanetsResponse:
       type: object
@@ -1042,10 +1095,13 @@ components:
         password:
           type: string
           minLength: 8
-          description: Password (min 8 characters).
+          maxLength: 100
+          description: Password (8–100 characters).
         name:
           type: string
-          description: Display name.
+          minLength: 1
+          maxLength: 100
+          description: Display name (1–100 characters).
 
     LoginRequest:
       type: object
@@ -1056,10 +1112,11 @@ components:
           format: email
         password:
           type: string
+          minLength: 1
 
     UserPublic:
       type: object
-      required: [id, email, role]
+      required: [id, email, name, role]
       properties:
         id:
           type: string
@@ -1074,7 +1131,7 @@ components:
 
     SessionUser:
       type: object
-      required: [id, email, role]
+      required: [id, email, name, role]
       properties:
         id:
           type: string
