@@ -115,6 +115,24 @@ The test setup requires `TEST_DATABASE_URL` and will refuse to run destructive D
 - `DELETE /api/bookings/{id}`  
   Delete a booking (returns `204 No Content`)
 
+### Analytics
+- `GET /api/analytics/bookings-summary?from=YYYY-MM-DD&to=YYYY-MM-DD&groupBy=day|month`  
+  Total bookings, breakdown by travel class, and bookings over time.
+
+- `GET /api/analytics/top-destinations?limit=10`  
+  Top booked exoplanets.
+
+- `GET /api/analytics/vibes`  
+  Exoplanet count per vibe category + booked-per-vibe.
+
+### Analytics Dashboard (UI)
+Navigate to **`/analytics`** (requires login) to view an interactive dashboard with:
+- Total bookings count
+- Bookings by travel class (bar chart)
+- Top destinations (ranked list with vibe emoji)
+- Vibe distribution (planet count + booking count per vibe)
+- Bookings over time (daily/monthly bar chart with date range filters)
+
 ---
 
 ## 📚 API Documentation
