@@ -299,3 +299,112 @@ No response body.
 ## Error responses
 - 400: Invalid id
 - 404: Booking not found
+
+\newpage
+
+# GET /api/analytics/vibes
+
+Purpose: Get the distribution of exoplanets across vibe categories, plus vibes ranked by booking popularity.
+
+## Query parameters
+None.
+
+## Example request
+
+    curl -s "http://localhost:3000/api/analytics/vibes" | jq
+
+## Success response (200)
+Returns two arrays — planet counts per vibe and booking counts per vibe:
+
+    {
+      "vibes": [
+        { "vibe": "Habitable Paradise", "count": 42 },
+        { "vibe": "Molten Rock", "count": 38 },
+        { "vibe": "Mysterious", "count": 25 }
+      ],
+      "topBooked": [
+        { "vibe": "Habitable Paradise", "bookings": 120 },
+        { "vibe": "Mysterious", "bookings": 78 }
+      ]
+    }
+
+\newpage
+
+# GET /api/analytics/top-destinations
+
+Purpose: Get the most popular exoplanet destinations ranked by total booking count.
+
+## Query parameters
+- limit (integer, default 10, max 100): Maximum number of destinations to return
+
+## Example requests
+
+Top 10 (default):
+    curl -s "http://localhost:3000/api/analytics/top-destinations" | jq
+
+Top 5:
+    curl -s "http://localhost:3000/api/analytics/top-destinations?limit=5" | jq
+
+## Success response (200)
+Returns an array of destinations ordered by booking count (descending):
+
+    {
+      "destinations": [
+        {
+          "planetId": "cmlp9k8qn0003dskufekwmztt",
+          "name": "HD 219134 c",
+          "distance": 21.3,
+          "vibe": "Molten Rock",
+          "bookings": 45
+        },
+        {
+          "planetId": "cmlp9k8qn0007dskuhej1ifkh",
+          "name": "Proxima Centauri b",
+          "distance": 4.24,
+          "vibe": "Habitable Paradise",
+          "bookings": 32
+        }
+      ]
+    }
+
+## Error responses
+- 400: Invalid limit parameter
+
+\newpage
+
+# GET /api/analytics/bookings-summary
+
+Purpose: Get aggregated booking statistics — total count, breakdown by travel class, and a time-series breakdown by day or month.
+
+## Query parameters
+- from (string, optional): Start date filter (YYYY-MM-DD, inclusive)
+- to (string, optional): End date filter (YYYY-MM-DD, inclusive)
+- groupBy (day | month, default day): Time granularity for the byPeriod array
+
+## Example requests
+
+Full summary (all time, daily):
+    curl -s "http://localhost:3000/api/analytics/bookings-summary" | jq
+
+Monthly summary for 2025:
+    curl -s "http://localhost:3000/api/analytics/bookings-summary?from=2025-01-01&to=2025-12-31&groupBy=month" | jq
+
+## Success response (200)
+Returns total bookings, travel-class breakdown, and time-series data:
+
+    {
+      "totalBookings": 256,
+      "byTravelClass": [
+        { "travelClass": "Economy (Cryo-Sleep)", "count": 180 },
+        { "travelClass": "First Class (Warp Drive)", "count": 76 }
+      ],
+      "byPeriod": [
+        { "period": "2025-01", "count": 120 },
+        { "period": "2025-02", "count": 136 }
+      ]
+    }
+
+Note: When groupBy=day, period values use YYYY-MM-DD format. When groupBy=month, period values use YYYY-MM format.
+
+## Error responses
+- 400: Invalid date format or invalid groupBy value
