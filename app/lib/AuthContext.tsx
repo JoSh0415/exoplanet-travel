@@ -12,6 +12,7 @@ export type AuthUser = {
   id: string;
   email: string;
   name: string | null;
+  role?: string;
 };
 
 type AuthContextType = {
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/auth/me", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        setUser(data.user ?? null);
+        setUser(data.user ? { id: data.user.id, email: data.user.email, name: data.user.name, role: data.user.role } : null);
       } else {
         setUser(null);
       }
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const data = await res.json();
-    setUser({ id: data.id, email: data.email, name: data.name });
+    setUser({ id: data.id, email: data.email, name: data.name, role: data.role });
   }, []);
 
   const register = useCallback(
@@ -78,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await res.json();
-      setUser({ id: data.id, email: data.email, name: data.name });
+      setUser({ id: data.id, email: data.email, name: data.name, role: data.role });
     },
     []
   );

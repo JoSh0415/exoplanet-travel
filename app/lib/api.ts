@@ -204,3 +204,60 @@ export async function fetchVibesAnalytics(): Promise<VibesAnalytics> {
   }
   return res.json();
 }
+
+/* ─── Admin types ─── */
+
+export type DataImportRun = {
+  id: string;
+  sourceName: string;
+  tapQuery: string;
+  retrievedAt: string;
+  insertedCount: number;
+  updatedCount: number;
+  errorMessage: string | null;
+  createdAt: string;
+};
+
+export type RefreshResult = {
+  message: string;
+  sourceName: string;
+  tapQuery: string;
+  retrievedAt: string;
+  insertedCount: number;
+  updatedCount: number;
+  errorMessage: string | null;
+};
+
+/* ─── Admin fetchers ─── */
+
+export async function fetchImportRuns(query: {
+  page?: number;
+  pageSize?: number;
+}): Promise<Paginated<DataImportRun>> {
+  const res = await fetch(`/api/admin/import-runs${buildQuery(query)}`, { cache: "no-store" });
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error?.message ?? (res.status === 401 ? "Authentication required" : "Admin role required"));
+    }
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to fetch import runs (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function refreshExoplanets(): Promise<RefreshResult> {
+  const res = await fetch(`/api/admin/refresh-exoplanets`, {
+    method: "POST",
+    cache: "no-store",
+  });
+  if (!res.ok && res.status !== 207) {
+    if (res.status === 401 || res.status === 403) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error?.message ?? (res.status === 401 ? "Authentication required" : "Admin role required"));
+    }
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to refresh exoplanets (${res.status})`);
+  }
+  return res.json();
+}
