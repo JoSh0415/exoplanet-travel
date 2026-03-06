@@ -63,6 +63,15 @@ export async function fetchExoplanet(id: string): Promise<Exoplanet> {
   return res.json();
 }
 
+export type BookingWithDetails = {
+  id: string;
+  bookingDate: string;
+  travelClass: string;
+  status?: string;
+  user: { id: string; name: string | null; email: string };
+  planet: { id: string; name: string; distance: number; vibe: string | null; discoveryYear: number | null };
+};
+
 export async function createBooking(input: {
   userId: string;
   planetId: string;
@@ -80,4 +89,44 @@ export async function createBooking(input: {
   }
 
   return res.json();
+}
+
+export async function fetchBookings(query: {
+  page?: number;
+  pageSize?: number;
+  userId?: string;
+}): Promise<Paginated<BookingWithDetails>> {
+  const res = await fetch(`/api/bookings${buildQuery(query)}`, { cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to fetch bookings (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateBooking(
+  id: string,
+  input: { travelClass?: string; status?: string }
+): Promise<Booking> {
+  const res = await fetch(`/api/bookings/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to update booking (${res.status})`);
+  }
+
+  return res.json();
+}
+
+export async function deleteBooking(id: string): Promise<void> {
+  const res = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
+
+  if (!res.ok && res.status !== 204) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to delete booking (${res.status})`);
+  }
 }
