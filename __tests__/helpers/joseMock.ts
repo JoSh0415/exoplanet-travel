@@ -1,11 +1,11 @@
 export class SignJWT {
-  private payload: any;
-  private header: any;
-  private time: any;
-  constructor(payload: any) {
+  private payload: Record<string, unknown>;
+  private header: Record<string, unknown> | undefined;
+  private time: string | undefined;
+  constructor(payload: Record<string, unknown>) {
     this.payload = { ...payload }; // Deep copy so we don't mutate original
   }
-  setProtectedHeader(h: any) { this.header = h; return this; }
+  setProtectedHeader(h: Record<string, unknown>) { this.header = h; return this; }
   setIssuedAt() { return this; }
   setExpirationTime(time: string) {
     this.time = time;

@@ -37,7 +37,6 @@ describe("High-Value Integration Edge Cases", () => {
     });
 
     it("should return 429 when max register attempts are exceeded", async () => {
-      const email = `ratelimit2-${Date.now()}@example.com`;
       const proxyIp = `192.168.2.${Math.floor(Math.random() * 255)}`;
 
       let rateLimited = false;

@@ -1,7 +1,6 @@
 import { validateId } from "../../app/lib/validators/common";
 import { loginSchema, registerSchema } from "../../app/lib/validators/auth";
 import { createBookingSchema } from "../../app/lib/validators/bookings";
-import { importRunsQuerySchema, nasaCsvRowSchema } from "../../app/lib/validators/admin";
 
 describe("Validators", () => {
   describe("Common ID Validator (cuid)", () => {
@@ -55,7 +54,7 @@ describe("Validators", () => {
       });
       expect(res.success).toBe(true);
       if (res.success) {
-        expect((res.data as any).status).toBeUndefined(); // Assuming Zod defaults to stripping unknown properties
+        expect((res.data as Record<string, unknown>).status).toBeUndefined(); // Assuming Zod defaults to stripping unknown properties
       }
     });
   });
