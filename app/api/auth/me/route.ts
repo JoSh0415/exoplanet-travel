@@ -1,7 +1,8 @@
 import { jsonResponse } from "../../../lib/http";
 import { getSession } from "../../../lib/auth";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   const session = await getSession();
 
   if (!session) {
@@ -20,4 +21,4 @@ export async function GET() {
       },
     }, { status: 200 }
   );
-}
+});

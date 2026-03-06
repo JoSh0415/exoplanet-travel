@@ -1,5 +1,6 @@
 import { jsonResponse } from "../../../lib/http";
 import { prisma } from "../../../lib/prisma";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
 /**
  * GET /api/analytics/vibes
@@ -7,7 +8,7 @@ import { prisma } from "../../../lib/prisma";
  * Returns the count of exoplanets per vibe category,
  * plus optional top-booked vibes (vibes ordered by booking count).
  */
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   // Count exoplanets per vibe using groupBy
   const vibeCounts = await prisma.exoplanet.groupBy({
     by: ["vibe"],
@@ -37,4 +38,4 @@ export async function GET() {
   }));
 
   return jsonResponse({ vibes, topBooked });
-}
+});

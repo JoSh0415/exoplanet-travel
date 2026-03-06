@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { bookingsSummaryQuerySchema } from "../../../lib/validators/analytics";
 import { jsonError, jsonResponse } from "../../../lib/http";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
 import { Prisma } from "@prisma/client";
 
@@ -13,7 +14,7 @@ import { Prisma } from "@prisma/client";
  * - byTravelClass breakdown
  * - byPeriod breakdown (day or month buckets)
  */
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const url = new URL(req.url);
   const queryObj = Object.fromEntries(url.searchParams.entries());
 
@@ -90,4 +91,4 @@ export async function GET(req: NextRequest) {
   return jsonResponse(
     { totalBookings, byTravelClass, byPeriod }
   );
-}
+});

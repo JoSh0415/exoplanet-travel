@@ -2,8 +2,9 @@ import { NextRequest } from "next/server";
 import { prisma } from "../../lib/prisma";
 import { exoplanetsQuerySchema } from "../../lib/validators/exoplanets";
 import { jsonError, jsonResponse } from "../../lib/http";
+import { withErrorHandler } from "../../lib/routeHandler";
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const url = new URL(req.url);
 
   const queryObj = Object.fromEntries(url.searchParams.entries());
@@ -64,4 +65,4 @@ export async function GET(req: NextRequest) {
     total,
     totalPages,
   });
-}
+});

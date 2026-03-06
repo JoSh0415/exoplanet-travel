@@ -2,8 +2,9 @@ import { prisma } from "../../../lib/prisma";
 import { getSession } from "../../../lib/auth";
 import { jsonError, jsonResponse } from "../../../lib/http";
 import { importExoplanets } from "../../../lib/nasaImport";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
-export async function POST() {
+export const POST = withErrorHandler(async () => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -31,4 +32,4 @@ export async function POST() {
       ...result,
     }, { status: 200 }
   );
-}
+});

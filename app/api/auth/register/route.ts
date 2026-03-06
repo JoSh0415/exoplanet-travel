@@ -3,10 +3,11 @@ import { prisma } from "../../../lib/prisma";
 import { jsonError, jsonResponse } from "../../../lib/http";
 import { registerSchema } from "../../../lib/validators/auth";
 import { hashPassword, setSessionCookie } from "../../../lib/auth";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
 import { authRateLimiter } from "../../../lib/rateLimit";
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   const { limited, retryAfter } = authRateLimiter.isRateLimited(ip);
   if (limited) {
@@ -67,4 +68,4 @@ export async function POST(req: NextRequest) {
   return jsonResponse(
     { id: user.id, email: user.email, name: user.name, role: user.role }, { status: 201 }
   );
-}
+});

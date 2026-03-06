@@ -2,10 +2,10 @@ import { NextRequest } from "next/server";
 import { prisma } from "../../lib/prisma";
 import { jsonError, jsonResponse } from "../../lib/http";
 import { createBookingSchema, listBookingsQuerySchema } from "../../lib/validators/bookings";
-
+import { withErrorHandler } from "../../lib/routeHandler";
 import { getSession } from "../../lib/auth";
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -55,9 +55,9 @@ export async function POST(req: NextRequest) {
   });
 
   return jsonResponse(booking, { status: 201 });
-}
+});
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -123,4 +123,4 @@ export async function GET(req: NextRequest) {
     total,
     totalPages,
   });
-}
+});

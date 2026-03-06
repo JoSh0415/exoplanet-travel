@@ -3,8 +3,9 @@ import { prisma } from "../../../lib/prisma";
 import { getSession } from "../../../lib/auth";
 import { jsonError, jsonResponse } from "../../../lib/http";
 import { importRunsQuerySchema } from "../../../lib/validators/admin";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -45,4 +46,4 @@ export async function GET(req: NextRequest) {
   return jsonResponse(
     { items, page, pageSize, total, totalPages }
   );
-}
+});

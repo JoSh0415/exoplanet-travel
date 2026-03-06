@@ -177,6 +177,116 @@ describe("GET /api/bookings", () => {
   });
 });
 
+// ── GET /api/bookings/{id} ──────────────────────────────────────────
+
+describe("GET /api/bookings/{id}", () => {
+  test("returns 401 when unauthenticated", async () => {
+    const fakeId = "c" + "z".repeat(24);
+    const res = await request(BASE).get(`/api/bookings/${fakeId}`);
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  test("owner can view their own booking (200)", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("get-owner");
+    const cookies = await registerAndLogin(email, "securePass123", "GetOwner");
+
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", cookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const res = await request(BASE)
+      .get(`/api/bookings/${created.body.id}`)
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("id", created.body.id);
+    expect(res.body).toHaveProperty("travelClass", "Economy (Cryo-Sleep)");
+    expect(res.body).toHaveProperty("user");
+    expect(res.body).toHaveProperty("planet");
+    expect(res.body.planet).toHaveProperty("name");
+  });
+
+  test("returns 403 when non-owner tries to view", async () => {
+    const { planet } = await seedMinimalData();
+
+    const emailOwner = uniqueEmail("get-owner2");
+    const ownerCookies = await registerAndLogin(emailOwner, "securePass123", "OwnerView");
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", ownerCookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const emailOther = uniqueEmail("get-other");
+    const otherCookies = await registerAndLogin(emailOther, "securePass123", "OtherView");
+
+    const res = await request(BASE)
+      .get(`/api/bookings/${created.body.id}`)
+      .set("Cookie", otherCookies.join("; "));
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("FORBIDDEN");
+  });
+
+  test("admin can view any booking", async () => {
+    const { planet } = await seedMinimalData();
+
+    const emailReg = uniqueEmail("get-reg");
+    const regCookies = await registerAndLogin(emailReg, "securePass123", "GetReg");
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", regCookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const emailAdmin = uniqueEmail("get-admin");
+    await registerAndLogin(emailAdmin, "securePass123", "GetAdmin");
+    await promoteToAdmin(emailAdmin);
+    const loginRes = await request(BASE)
+      .post("/api/auth/login")
+      .send({ email: emailAdmin, password: "securePass123" });
+    const rawCookies = loginRes.headers["set-cookie"];
+    const adminCookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
+
+    const res = await request(BASE)
+      .get(`/api/bookings/${created.body.id}`)
+      .set("Cookie", adminCookies.join("; "));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("id", created.body.id);
+  }, 15_000);
+
+  test("returns 404 when booking does not exist", async () => {
+    const email = uniqueEmail("get-404");
+    const cookies = await registerAndLogin(email, "securePass123", "Get404");
+    const fakeId = "c" + "z".repeat(24);
+
+    const res = await request(BASE)
+      .get(`/api/bookings/${fakeId}`)
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("NOT_FOUND");
+  });
+
+  test("returns 400 for invalid id format", async () => {
+    const email = uniqueEmail("get-bad-id");
+    const cookies = await registerAndLogin(email, "securePass123", "GetBadId");
+
+    const res = await request(BASE)
+      .get("/api/bookings/not-a-valid-id")
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+});
+
 // ── PATCH /api/bookings/{id} ────────────────────────────────────────
 
 describe("PATCH /api/bookings/{id}", () => {

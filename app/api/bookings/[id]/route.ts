@@ -3,7 +3,7 @@ import { prisma } from "../../../lib/prisma";
 import { jsonError, jsonResponse } from "../../../lib/http";
 import { updateBookingSchema } from "../../../lib/validators/bookings";
 import { validateId } from "../../../lib/validators/common";
-
+import { withErrorHandler } from "../../../lib/routeHandler";
 import { getSession } from "../../../lib/auth";
 
 async function verifyBookingAccess(id: string, session: { userId: string; role: string }, action: string) {
@@ -23,10 +23,10 @@ async function verifyBookingAccess(id: string, session: { userId: string; role: 
   return { existing };
 }
 
-export async function GET(
+export const GET = withErrorHandler(async (
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
-) {
+) => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -66,12 +66,12 @@ export async function GET(
   }
 
   return jsonResponse(booking, { status: 200 });
-}
+});
 
-export async function PATCH(
+export const PATCH = withErrorHandler(async (
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
-) {
+) => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -127,12 +127,12 @@ export async function PATCH(
   });
 
   return jsonResponse(updated, { status: 200 });
-}
+});
 
-export async function DELETE(
+export const DELETE = withErrorHandler(async (
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
-) {
+) => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -150,4 +150,4 @@ export async function DELETE(
 
   await prisma.booking.delete({ where: { id } });
   return new NextResponse(null, { status: 204 });
-}
+});

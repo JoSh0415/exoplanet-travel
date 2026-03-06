@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { jsonError, jsonResponse } from "../../../lib/http";
-
+import { withErrorHandler } from "../../../lib/routeHandler";
 import { validateId } from "../../../lib/validators/common";
 
-export async function GET(
+export const GET = withErrorHandler(async (
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await context.params;
 
   const idCheck = validateId(id);
@@ -33,4 +33,4 @@ export async function GET(
   }
 
   return jsonResponse(planet);
-}
+});

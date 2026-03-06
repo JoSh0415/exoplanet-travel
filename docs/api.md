@@ -368,7 +368,7 @@ Sets an httpOnly `exo-session` cookie upon success.
 
 ## Request body fields
 - email (string): User email (stored as lowercase)
-- password (string): Password (minimum 6 characters)
+- password (string): Password (minimum 8 characters)
 - name (string): Display name
 
 ## Example request
@@ -391,6 +391,7 @@ Returns the created user (password is never returned):
 ## Error responses
 - 400: Validation error (e.g. missing fields, password too short)
 - 409: Email already exists
+- 429: Too many registration attempts (rate limited)
 
 \newpage
 
@@ -424,6 +425,7 @@ Returns the authenticated user:
 ## Error responses
 - 400: Validation error (e.g. missing fields)
 - 401: Invalid email or password
+- 429: Too many login attempts (rate limited)
 
 \newpage
 
@@ -663,3 +665,34 @@ Note: When groupBy=day, period values use YYYY-MM-DD format. When groupBy=month,
 
 ## Error responses
 - 400: Invalid date format or invalid groupBy value
+
+\newpage
+
+# GET /api/health
+
+Purpose: Liveness / readiness probe — checks database connectivity and reports uptime.
+
+No authentication required.
+
+## Example request
+
+    curl -s "http://localhost:3000/api/health" | jq
+
+## Success response (200)
+
+    {
+      "status": "ok",
+      "timestamp": "2026-03-06T10:00:00.000Z",
+      "database": "connected",
+      "uptime": 3642.12
+    }
+
+## Degraded response (503)
+Returned when the database is unreachable:
+
+    {
+      "status": "degraded",
+      "timestamp": "2026-03-06T10:00:00.000Z",
+      "database": "disconnected",
+      "uptime": 3642.12
+    }

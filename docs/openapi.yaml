@@ -34,8 +34,32 @@ tags:
     description: Admin-only endpoints for data import management.
   - name: Analytics
     description: Aggregated statistics for dashboards and charts.
+  - name: Health
+    description: Service health and readiness checks.
 
 paths:
+  /api/health:
+    get:
+      tags: [Health]
+      operationId: healthCheck
+      summary: Health check
+      description: |
+        Liveness / readiness probe. Returns service status and database
+        connectivity. Returns 200 when healthy, 503 when degraded.
+      responses:
+        "200":
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: Service is degraded (e.g. database unreachable).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
   /api/exoplanets:
     get:
       tags: [Exoplanets]
@@ -1163,3 +1187,20 @@ components:
                 description: Date string (YYYY-MM-DD or YYYY-MM).
               count:
                 type: integer
+
+    HealthResponse:
+      type: object
+      required: [status, timestamp, database, uptime]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        timestamp:
+          type: string
+          format: date-time
+        database:
+          type: string
+          enum: [connected, disconnected]
+        uptime:
+          type: number
+          description: Server uptime in seconds.
