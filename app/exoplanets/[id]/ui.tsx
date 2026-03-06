@@ -622,7 +622,19 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
                     <span className="text-sm font-mono text-cyan-400">{bookingId}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-center gap-3 mt-4">
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+                  <Link
+                    href="/bookings"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-medium shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all hover:-translate-y-0.5 flex items-center gap-2"
+                  >
+                    🎫 View in My Bookings
+                  </Link>
+                  <Link
+                    href="/analytics"
+                    className="px-5 py-2.5 rounded-xl bg-white/5 border border-indigo-500/30 hover:bg-indigo-500/10 hover:border-indigo-400/50 text-indigo-300 text-sm font-medium transition-all hover:-translate-y-0.5 flex items-center gap-2"
+                  >
+                    📊 View Analytics
+                  </Link>
                   <Link href="/exoplanets" className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm text-slate-300 transition-all">
                     Explore More
                   </Link>
@@ -635,7 +647,7 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
                       setDepartureDate("");
                       setPassengers(1);
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-medium shadow-lg shadow-cyan-500/20 transition-all"
+                    className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm text-slate-300 transition-all"
                   >
                     Book Another
                   </button>

@@ -33,6 +33,7 @@ export default function BookingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const pageSize = 12;
 
   const load = useCallback(async () => {
@@ -62,6 +63,7 @@ export default function BookingsPage() {
     setDeletingId(id);
     try {
       await deleteBooking(id);
+      setToast("Booking cancelled.");
       await load();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to cancel booking");
@@ -101,6 +103,27 @@ export default function BookingsPage() {
             Manage your interstellar travel bookings
           </p>
         </div>
+
+        {/* Toast */}
+        {toast && (
+          <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-mono flex items-center justify-between gap-3 animate-fade-in-up">
+            <span className="flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+              {toast}
+            </span>
+            <div className="flex items-center gap-3">
+              <Link href="/analytics" className="text-indigo-400 hover:text-indigo-300 transition-colors underline underline-offset-2">
+                View analytics →
+              </Link>
+              <button onClick={() => setToast(null)} className="text-slate-500 hover:text-slate-300 transition-colors">
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Error */}
         {error && (

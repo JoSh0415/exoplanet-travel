@@ -173,6 +173,19 @@ export default function AnalyticsPage() {
 
           {/* Controls */}
           <div className="flex flex-wrap items-end gap-3">
+            <button
+              onClick={() => load()}
+              disabled={loading}
+              className="px-4 py-1.5 text-xs font-mono text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 hover:border-cyan-400/50 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 self-end"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={loading ? "animate-spin" : ""}>
+                <path d="M21.5 2v6h-6" />
+                <path d="M2.5 22v-6h6" />
+                <path d="M2 11.5a10 10 0 0 1 18.8-4.3" />
+                <path d="M22 12.5a10 10 0 0 1-18.8 4.2" />
+              </svg>
+              {loading ? "Refreshing…" : "Refresh"}
+            </button>
             <label className="flex flex-col gap-1">
               <span className="text-[11px] font-mono text-slate-600 uppercase">From</span>
               <input
