@@ -1,27 +1,32 @@
 import { PrismaClient } from "@prisma/client";
 
+/**
+ * Test-only Prisma client — ALWAYS connects to TEST_DATABASE_URL.
+ * Never falls through to DATABASE_URL so prod can't be wiped accidentally.
+ */
 const createPrismaClient = () => {
-  if (process.env.NODE_ENV === "test") {
-    if (process.env.TEST_DATABASE_URL) {
-      return new PrismaClient({
-        datasources: {
-          db: {
-            url: process.env.TEST_DATABASE_URL,
-          },
-        },
-      });
-    }
+  const url = process.env.TEST_DATABASE_URL;
+  if (!url) {
+    throw new Error(
+      "TEST_DATABASE_URL is not set. " +
+      "Test helpers require a dedicated test database to prevent wiping production data. " +
+      "Set TEST_DATABASE_URL in your .env file."
+    );
   }
-  return new PrismaClient();
+  return new PrismaClient({
+    datasources: {
+      db: { url },
+    },
+  });
 };
 
 export const prisma = createPrismaClient();
 
 export async function resetDb() {
-  if (process.env.NODE_ENV === "test" && !process.env.TEST_DATABASE_URL) {
+  // Belt-and-suspenders: verify at call time too, in case env changed
+  if (!process.env.TEST_DATABASE_URL) {
     throw new Error(
-      "Test environment detected but TEST_DATABASE_URL is missing. " +
-      "Please set TEST_DATABASE_URL in your .env file to prevent wiping the development database."
+      "TEST_DATABASE_URL is not set. Refusing to run resetDb() to prevent wiping a non-test database."
     );
   }
   
