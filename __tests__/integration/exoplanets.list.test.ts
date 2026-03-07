@@ -134,3 +134,78 @@ test("GET /api/exoplanets rejects invalid params with 400 + validation error sha
   expect(res.status).toBe(400);
   expect(res.body).toHaveProperty("error.code", "VALIDATION_ERROR");
 });
+
+// ── Combined filter tests ───────────────────────────────────────────
+
+test("GET /api/exoplanets supports combined vibe + distance filters", async () => {
+  await seedPlanetsForListTests();
+
+  const res = await request(BASE).get(
+    "/api/exoplanets?vibe=Molten%20Rock&minDistance=5&maxDistance=15&pageSize=100"
+  );
+  expect(res.status).toBe(200);
+
+  for (const p of res.body.items) {
+    expect(p.vibe).toBe("Molten Rock");
+    expect(p.distance).toBeGreaterThanOrEqual(5);
+    expect(p.distance).toBeLessThanOrEqual(15);
+  }
+  // Verify we actually matched some items (even-numbered planets 6,8,10,12,14)
+  expect(res.body.total).toBeGreaterThanOrEqual(1);
+});
+
+test("GET /api/exoplanets supports q search + sort + order combined", async () => {
+  await seedPlanetsForListTests();
+
+  const res = await request(BASE).get(
+    "/api/exoplanets?q=Test%20Planet&sort=discoveryYear&order=desc&pageSize=5"
+  );
+  expect(res.status).toBe(200);
+  expect(res.body.items.length).toBeGreaterThanOrEqual(1);
+
+  // All returned items should match the search term
+  for (const p of res.body.items) {
+    expect(p.name.toLowerCase()).toContain("test planet");
+  }
+
+  // Results should be sorted by discoveryYear descending
+  const years = res.body.items.map((p: { discoveryYear: number }) => p.discoveryYear);
+  for (let i = 1; i < years.length; i++) {
+    expect(years[i]).toBeLessThanOrEqual(years[i - 1]);
+  }
+});
+
+test("GET /api/exoplanets returns 0 items when combined filters match nothing", async () => {
+  await seedPlanetsForListTests();
+
+  const res = await request(BASE).get(
+    "/api/exoplanets?vibe=Habitable%20Paradise&maxDistance=1"
+  );
+  expect(res.status).toBe(200);
+  // Habitable Paradise planet is at distance 100, so maxDistance=1 excludes it
+  expect(res.body.items).toHaveLength(0);
+  expect(res.body.total).toBe(0);
+  expect(res.body.totalPages).toBe(1);
+});
+
+test("GET /api/exoplanets supports q + vibe + distance + sort combined", async () => {
+  await seedPlanetsForListTests();
+
+  const res = await request(BASE).get(
+    "/api/exoplanets?q=Test&vibe=Mysterious&minDistance=1&maxDistance=10&sort=distance&order=asc&pageSize=100"
+  );
+  expect(res.status).toBe(200);
+
+  for (const p of res.body.items) {
+    expect(p.name.toLowerCase()).toContain("test");
+    expect(p.vibe).toBe("Mysterious");
+    expect(p.distance).toBeGreaterThanOrEqual(1);
+    expect(p.distance).toBeLessThanOrEqual(10);
+  }
+
+  // Results should be sorted by distance ascending
+  const distances = res.body.items.map((p: { distance: number }) => p.distance);
+  for (let i = 1; i < distances.length; i++) {
+    expect(distances[i]).toBeGreaterThanOrEqual(distances[i - 1]);
+  }
+});

@@ -991,6 +991,7 @@ components:
 
     BookingListItem:
       type: object
+      required: [id, bookingDate, travelClass, status, user, planet]
       properties:
         id:
           type: string
@@ -1078,6 +1079,7 @@ components:
                 type: string
               distance:
                 type: number
+                nullable: true
               vibe:
                 type: string
                 nullable: true

@@ -7,7 +7,9 @@ const config: Config = {
   clearMocks: true,
   restoreMocks: true,
   collectCoverageFrom: [
-    "app/**/*.{ts,tsx}",
+    "app/api/**/*.{ts,tsx}",
+    "app/lib/**/*.{ts,tsx}",
+    "app/middleware.ts",
     "!**/*.d.ts",
     "!**/node_modules/**",
   ],

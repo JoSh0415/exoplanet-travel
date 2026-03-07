@@ -175,6 +175,45 @@ describe("GET /api/bookings", () => {
     // Admin should see at least the regular user's booking
     expect(res.body.total).toBeGreaterThanOrEqual(1);
   });
+
+  test("returns empty items and correct pagination for page beyond total", async () => {
+    const email = uniqueEmail("page-beyond");
+    const cookies = await registerAndLogin(email, "securePass123", "PageBeyond");
+
+    const res = await request(BASE)
+      .get("/api/bookings?page=999&pageSize=10")
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(0);
+    expect(res.body.page).toBe(999);
+    expect(res.body.totalPages).toBeGreaterThanOrEqual(1);
+  });
+
+  test("returns correct pagination metadata shape", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("paginate-meta");
+    const cookies = await registerAndLogin(email, "securePass123", "PaginateMeta");
+
+    // Create 3 bookings
+    for (let i = 0; i < 3; i++) {
+      await request(BASE)
+        .post("/api/bookings")
+        .set("Cookie", cookies.join("; "))
+        .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    }
+
+    const res = await request(BASE)
+      .get("/api/bookings?page=1&pageSize=2")
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(200);
+    expect(res.body.page).toBe(1);
+    expect(res.body.pageSize).toBe(2);
+    expect(res.body.items).toHaveLength(2);
+    expect(res.body.total).toBeGreaterThanOrEqual(3);
+    expect(res.body.totalPages).toBeGreaterThanOrEqual(2);
+  });
 });
 
 // ── GET /api/bookings/{id} ──────────────────────────────────────────

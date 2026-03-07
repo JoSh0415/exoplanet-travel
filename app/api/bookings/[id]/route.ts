@@ -5,6 +5,7 @@ import { updateBookingSchema } from "../../../lib/validators/bookings";
 import { validateId } from "../../../lib/validators/common";
 import { withErrorHandler } from "../../../lib/routeHandler";
 import { getSession } from "../../../lib/auth";
+import { corsHeaders } from "../../../lib/cors";
 
 async function verifyBookingAccess(id: string, session: { userId: string; role: string }, action: string) {
   const existing = await prisma.booking.findUnique({
@@ -149,5 +150,5 @@ export const DELETE = withErrorHandler(async (
   if (access.error) return access.error;
 
   await prisma.booking.delete({ where: { id } });
-  return new NextResponse(null, { status: 204 });
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
 });
