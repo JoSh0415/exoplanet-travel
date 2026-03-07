@@ -33,10 +33,10 @@ describe("withErrorHandler", () => {
 
   it("maps Prisma P2002 (unique constraint) to 409 CONFLICT", async () => {
     const handler = withErrorHandler(async () => {
-      const err: Record<string, unknown> = new Error("Unique constraint");
-      err.code = "P2002";
-      err.clientVersion = "5.0.0";
-      throw err;
+      throw Object.assign(new Error("Unique constraint"), {
+        code: "P2002",
+        clientVersion: "5.0.0",
+      });
     });
 
     const res = await handler(fakeReq("POST"));
@@ -47,10 +47,10 @@ describe("withErrorHandler", () => {
 
   it("maps Prisma P2025 (record not found) to 404 NOT_FOUND", async () => {
     const handler = withErrorHandler(async () => {
-      const err: Record<string, unknown> = new Error("Record not found");
-      err.code = "P2025";
-      err.clientVersion = "5.0.0";
-      throw err;
+      throw Object.assign(new Error("Record not found"), {
+        code: "P2025",
+        clientVersion: "5.0.0",
+      });
     });
 
     const res = await handler(fakeReq("DELETE"));
@@ -61,10 +61,10 @@ describe("withErrorHandler", () => {
 
   it("maps other Prisma known errors to 400 DATABASE_ERROR", async () => {
     const handler = withErrorHandler(async () => {
-      const err: Record<string, unknown> = new Error("Foreign key");
-      err.code = "P2003";
-      err.clientVersion = "5.0.0";
-      throw err;
+      throw Object.assign(new Error("Foreign key"), {
+        code: "P2003",
+        clientVersion: "5.0.0",
+      });
     });
 
     const res = await handler(fakeReq());
@@ -76,7 +76,7 @@ describe("withErrorHandler", () => {
   it("maps PrismaClientValidationError to 400 VALIDATION_ERROR", async () => {
     const handler = withErrorHandler(async () => {
       const err = new Error("Missing field");
-      (err as Record<string, unknown>).name = "PrismaClientValidationError";
+      err.name = "PrismaClientValidationError";
       throw err;
     });
 
