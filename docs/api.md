@@ -56,11 +56,15 @@ All error responses follow this structure:
     }
 
 Common status codes:
-- 200 OK: Successful GET
-- 201 Created: Successful POST
+- 200 OK: Successful GET or POST
+- 201 Created: Successful resource creation
 - 204 No Content: Successful DELETE
+- 207 Multi-Status: Partial success (e.g. import with errors)
 - 400 Bad Request: Validation / malformed JSON
+- 401 Unauthorized: Authentication required (no valid session)
+- 403 Forbidden: Insufficient permissions (e.g. non-admin)
 - 404 Not Found: Resource does not exist
+- 409 Conflict: Resource already exists (e.g. duplicate email)
 
 \newpage
 
@@ -71,8 +75,8 @@ Purpose: List exoplanets (catalogue page) with pagination, search, and filters.
 ## Query parameters
 - page (integer, default 1): Page number (1-indexed)
 - pageSize (integer, default 20, max 100): Items per page
-- q (string, optional): Case-insensitive substring search in planet name
-- vibe (string, optional): Filter by derived category (e.g., "Molten Rock", "Mysterious")
+- q (string, optional): Case-insensitive substring search in planet name (1–100 characters)
+- vibe (string, optional): Filter by derived category (e.g., "Molten Rock", "Mysterious") (1–60 characters)
 - minDistance (number, optional): Minimum distance in light years (inclusive)
 - maxDistance (number, optional): Maximum distance in light years (inclusive)
 - sort (distance | discoveryYear | name, default distance)
@@ -182,6 +186,7 @@ Returns a paginated list of bookings including user and planet summary info:
           "id": "cmlp9k90d00dzdskuje80hqav",
           "bookingDate": "2026-02-16T14:52:20.000Z",
           "travelClass": "Economy (Cryo-Sleep)",
+          "status": "CONFIRMED",
           "user": {
             "id": "cmlp9k8ut00dwdskud6g70sxc",
             "name": "Peter Quill",
@@ -215,8 +220,8 @@ Purpose: Create a booking for the authenticated user to travel to an exoplanet.
 **Authentication:** Requires a valid `exo-session` cookie. The `userId` is derived from the session — do not include it in the request body.
 
 ## Request body fields
-- planetId (string): Exoplanet id
-- travelClass (string): Travel class label (e.g. "Economy (Cryo-Sleep)")
+- planetId (string): Exoplanet id (CUID format)
+- travelClass (string): Travel class label, e.g. "Economy (Cryo-Sleep)" (1–60 characters)
 
 ## Example request
 
@@ -233,6 +238,7 @@ Returns the created booking:
       "userId": "cmlp9k8ut00dwdskud6g70sxc",
       "planetId": "cmlp9k8qn0007dskuhej1ifkh",
       "travelClass": "Economy (Cryo-Sleep)",
+      "status": "CONFIRMED",
       "bookingDate": "2026-02-16T14:52:20.000Z"
     }
 
@@ -240,6 +246,51 @@ Returns the created booking:
 - 400: Invalid JSON or validation error
 - 401: Authentication required (no valid session cookie)
 - 404: Exoplanet not found
+
+\newpage
+
+# GET /api/bookings/{id}
+
+Purpose: Retrieve a single booking by its ID, including user and planet details.
+
+**Authentication:** Requires a valid `exo-session` cookie. Only the **booking owner** or an **ADMIN** can view a booking.
+
+## Path parameters
+- id (string): Booking id
+
+## Example request
+
+    curl -s -b cookies.txt "http://localhost:3000/api/bookings/cmlp9k90d00dzdskuje80hqav" | jq
+
+## Success response (200)
+Returns the booking with related data:
+
+    {
+      "id": "cmlp9k90d00dzdskuje80hqav",
+      "userId": "cmlp9k8ut00dwdskud6g70sxc",
+      "planetId": "cmlp9k8qn0007dskuhej1ifkh",
+      "travelClass": "Economy (Cryo-Sleep)",
+      "status": "CONFIRMED",
+      "bookingDate": "2026-02-16T14:52:20.000Z",
+      "user": {
+        "id": "cmlp9k8ut00dwdskud6g70sxc",
+        "name": "Jane Doe",
+        "email": "jane@example.com"
+      },
+      "planet": {
+        "id": "cmlp9k8qn0007dskuhej1ifkh",
+        "name": "Kepler-442 b",
+        "distance": 100.0,
+        "vibe": "Habitable Paradise",
+        "discoveryYear": 2015
+      }
+    }
+
+## Error responses
+- 400: Invalid booking id
+- 401: Authentication required (no valid session cookie)
+- 403: Forbidden — you can only view your own bookings
+- 404: Booking not found
 
 \newpage
 
@@ -254,7 +305,10 @@ Purpose: Partially update a booking (e.g., change travel class).
 
 ## Request body
 Provide at least one field:
-- travelClass (string)
+- travelClass (string, 1–60 characters)
+- status (enum: `CONFIRMED` | `CANCELLED`)
+
+**Note:** Non-admin users may only set `status` to `"CANCELLED"`. Setting any other status value as a non-admin returns 403 Forbidden.
 
 ## Example request
 
@@ -271,6 +325,7 @@ Returns the updated booking:
       "userId": "cmlp9k8ut00dwdskud6g70sxc",
       "planetId": "cmlp9k8qn0007dskuhej1ifkh",
       "travelClass": "First Class (Warp Drive)",
+      "status": "CONFIRMED",
       "bookingDate": "2026-02-16T14:52:20.000Z"
     }
 
@@ -307,6 +362,205 @@ No response body.
 
 \newpage
 
+# POST /api/auth/register
+
+Purpose: Register a new user account.
+
+Sets an httpOnly `exo-session` cookie upon success.
+
+## Request body fields
+- email (string): User email (stored as lowercase)
+- password (string): Password (8–100 characters)
+- name (string): Display name (1–100 characters)
+
+## Example request
+
+    curl -s -X POST "http://localhost:3000/api/auth/register" \
+      -H "Content-Type: application/json" \
+      -c cookies.txt \
+      -d '{"email":"jane@example.com","password":"securePass123","name":"Jane Doe"}' | jq
+
+## Success response (201)
+Returns the created user (password is never returned):
+
+    {
+      "id": "cmlp9k8ut00dwdskud6g70sxc",
+      "email": "jane@example.com",
+      "name": "Jane Doe",
+      "role": "USER"
+    }
+
+## Error responses
+- 400: Validation error (e.g. missing fields, password too short)
+- 409: Email already exists
+- 429: Too many registration attempts (rate limited)
+
+\newpage
+
+# POST /api/auth/login
+
+Purpose: Authenticate with email and password.
+
+Sets an httpOnly `exo-session` cookie upon success.
+
+## Request body fields
+- email (string): User email
+- password (string): User password
+
+## Example request
+
+    curl -s -X POST "http://localhost:3000/api/auth/login" \
+      -H "Content-Type: application/json" \
+      -c cookies.txt \
+      -d '{"email":"jane@example.com","password":"securePass123"}' | jq
+
+## Success response (200)
+Returns the authenticated user:
+
+    {
+      "id": "cmlp9k8ut00dwdskud6g70sxc",
+      "email": "jane@example.com",
+      "name": "Jane Doe",
+      "role": "USER"
+    }
+
+## Error responses
+- 400: Validation error (e.g. missing fields)
+- 401: Invalid email or password
+- 429: Too many login attempts (rate limited)
+
+\newpage
+
+# GET /api/auth/me
+
+Purpose: Get the currently authenticated user from the session cookie.
+
+No authentication is strictly required — returns `{ "user": null }` if no valid session is present.
+
+## Example request
+
+    curl -s -b cookies.txt "http://localhost:3000/api/auth/me" | jq
+
+## Success response (200)
+Returns the session user or null:
+
+    {
+      "user": {
+        "id": "cmlp9k8ut00dwdskud6g70sxc",
+        "email": "jane@example.com",
+        "name": "Jane Doe",
+        "role": "USER"
+      }
+    }
+
+If unauthenticated:
+
+    {
+      "user": null
+    }
+
+\newpage
+
+# POST /api/auth/logout
+
+Purpose: Clear the session cookie and log out.
+
+## Example request
+
+    curl -s -X POST "http://localhost:3000/api/auth/logout" -b cookies.txt | jq
+
+## Success response (200)
+
+    {
+      "success": true
+    }
+
+\newpage
+
+# POST /api/admin/refresh-exoplanets
+
+Purpose: Trigger a fresh import of exoplanets from the NASA Exoplanet Archive TAP service.
+
+**Authentication:** Requires a valid `exo-session` cookie with **ADMIN** role.
+
+The import upserts planets (inserts new, updates existing) and records a `DataImportRun`.
+
+## Example request
+
+    curl -s -X POST "http://localhost:3000/api/admin/refresh-exoplanets" \
+      -b cookies.txt | jq
+
+## Success response (200)
+
+    {
+      "message": "Import completed successfully",
+      "retrievedAt": "2026-03-06T10:00:00.000Z",
+      "tapQuery": "SELECT ...",
+      "insertedCount": 15,
+      "updatedCount": 485,
+      "errorMessage": null
+    }
+
+## Partial success response (207)
+Returned when the import completed but some planets failed:
+
+    {
+      "message": "Import completed with errors",
+      "retrievedAt": "2026-03-06T10:00:00.000Z",
+      "tapQuery": "SELECT ...",
+      "insertedCount": 10,
+      "updatedCount": 480,
+      "errorMessage": "Failed to parse row 42: missing required field"
+    }
+
+## Error responses
+- 401: Authentication required
+- 403: Forbidden — requires ADMIN role
+
+\newpage
+
+# GET /api/admin/import-runs
+
+Purpose: List data import run records (paginated).
+
+**Authentication:** Requires a valid `exo-session` cookie with **ADMIN** role.
+
+## Query parameters
+- page (integer, default 1)
+- pageSize (integer, default 20, max 100)
+
+## Example request
+
+    curl -s -b cookies.txt "http://localhost:3000/api/admin/import-runs?page=1&pageSize=10" | jq
+
+## Success response (200)
+
+    {
+      "items": [
+        {
+          "id": "cm...",
+          "sourceName": "NASA Exoplanet Archive",
+          "tapQuery": "SELECT ...",
+          "retrievedAt": "2026-03-06T10:00:00.000Z",
+          "insertedCount": 15,
+          "updatedCount": 485,
+          "errorMessage": null,
+          "createdAt": "2026-03-06T10:00:12.000Z"
+        }
+      ],
+      "page": 1,
+      "pageSize": 10,
+      "total": 3,
+      "totalPages": 1
+    }
+
+## Error responses
+- 400: Invalid query parameters
+- 401: Authentication required
+- 403: Forbidden — requires ADMIN role
+
+\newpage
+
 # GET /api/analytics/vibes
 
 Purpose: Get the distribution of exoplanets across vibe categories, plus vibes ranked by booking popularity.
@@ -340,7 +594,7 @@ Returns two arrays — planet counts per vibe and booking counts per vibe:
 Purpose: Get the most popular exoplanet destinations ranked by total booking count.
 
 ## Query parameters
-- limit (integer, default 10, max 100): Maximum number of destinations to return
+- limit (integer, default 10, min 1, max 100): Maximum number of destinations to return
 
 ## Example requests
 
@@ -413,3 +667,34 @@ Note: When groupBy=day, period values use YYYY-MM-DD format. When groupBy=month,
 
 ## Error responses
 - 400: Invalid date format or invalid groupBy value
+
+\newpage
+
+# GET /api/health
+
+Purpose: Liveness / readiness probe — checks database connectivity and reports uptime.
+
+No authentication required.
+
+## Example request
+
+    curl -s "http://localhost:3000/api/health" | jq
+
+## Success response (200)
+
+    {
+      "status": "ok",
+      "timestamp": "2026-03-06T10:00:00.000Z",
+      "database": "connected",
+      "uptime": 3642.12
+    }
+
+## Degraded response (503)
+Returned when the database is unreachable:
+
+    {
+      "status": "degraded",
+      "timestamp": "2026-03-06T10:00:00.000Z",
+      "database": "disconnected",
+      "uptime": 3642.12
+    }

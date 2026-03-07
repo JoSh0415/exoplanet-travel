@@ -1,19 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { topDestinationsQuerySchema } from "../../../lib/validators/analytics";
-import { jsonError } from "../../../lib/http";
-import { corsHeaders } from "@/app/lib/cors";
-
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
+import { jsonError, jsonResponse } from "../../../lib/http";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
 /**
  * GET /api/analytics/top-destinations?limit=10
  *
  * Returns the top planets by booking count, including planet name, distance, and vibe.
  */
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const url = new URL(req.url);
   const queryObj = Object.fromEntries(url.searchParams.entries());
 
@@ -38,7 +34,7 @@ export async function GET(req: NextRequest) {
   });
 
   if (grouped.length === 0) {
-    return NextResponse.json({ destinations: [] }, { headers: corsHeaders });
+    return jsonResponse({ destinations: [] });
   }
 
   // Fetch planet details for the top planets
@@ -61,5 +57,5 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ destinations }, { headers: corsHeaders });
-}
+  return jsonResponse({ destinations });
+});

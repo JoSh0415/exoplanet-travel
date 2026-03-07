@@ -29,9 +29,11 @@ This project provides:
     npm install
 
 ### 2) Configure environment variables
-Create a `.env` file (or set env vars in your environment):
+Copy the example file and fill in your values:
 
-    DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DB"
+    cp .env.example .env
+
+Then edit `.env` with your database credentials and a random JWT secret. See `.env.example` for all required variables.
 
 ### 3) Run database migrations
     npx prisma migrate dev
@@ -104,20 +106,61 @@ The test setup requires `TEST_DATABASE_URL` and will refuse to run destructive D
 
 ### Bookings (Full CRUD)
 - `POST /api/bookings`  
-  Create a booking (JSON body: `userId`, `planetId`, `travelClass`)
+  Create a booking (JSON body: `planetId`, `travelClass`). The `userId` is taken from the authenticated session.
 
 - `GET /api/bookings`  
-  Paginated list; optional filter `userId`
+  Paginated list; optional filter `userId`. Admins can see all bookings.
 
 - `PATCH /api/bookings/{id}`  
-  Partial update (currently supports `travelClass`)
+  Partial update (supports `travelClass`, `status`)
 
 - `DELETE /api/bookings/{id}`  
   Delete a booking (returns `204 No Content`)
 
+### Auth
+- `POST /api/auth/register`  
+  Register a new user (JSON body: `email`, `password`, `name`). Sets session cookie.
+
+- `POST /api/auth/login`  
+  Log in with `email` and `password`. Sets session cookie.
+
+- `POST /api/auth/logout`  
+  Clear the session cookie.
+
+- `GET /api/auth/me`  
+  Get the currently authenticated user (or `null` if not logged in).
+
+### Admin (requires ADMIN role)
+- `POST /api/admin/refresh-exoplanets`  
+  Trigger a fresh import from the NASA Exoplanet Archive.
+
+- `GET /api/admin/import-runs`  
+  Paginated list of data import run records.
+
+### Analytics
+- `GET /api/analytics/bookings-summary?from=YYYY-MM-DD&to=YYYY-MM-DD&groupBy=day|month`  
+  Total bookings, breakdown by travel class, and bookings over time.
+
+- `GET /api/analytics/top-destinations?limit=10`  
+  Top booked exoplanets.
+
+- `GET /api/analytics/vibes`  
+  Exoplanet count per vibe category + booked-per-vibe.
+
+### Analytics Dashboard (UI)
+Navigate to **`/analytics`** (requires login) to view an interactive dashboard with:
+- Total bookings count
+- Bookings by travel class (bar chart)
+- Top destinations (ranked list with vibe emoji)
+- Vibe distribution (planet count + booking count per vibe)
+- Bookings over time (daily/monthly bar chart with date range filters)
+
 ---
 
 ## 📚 API Documentation
+
+### Interactive (Swagger UI)
+Start the dev server and navigate to **`/swagger/`** for interactive API exploration powered by Swagger UI.
 
 ### Required PDF (submission artifact)
 - **PDF:** `docs/api.pdf`
@@ -147,8 +190,3 @@ Exoplanet data is retrieved from the Exoplanet Archive TAP service using a SQL-l
 
 ## 🔁 Development workflow
 This repository uses feature branches (e.g. `data-integration`, `api-core`, `docs-api`) and merges into `main` for stable milestones.
-
----
-
-## 🤖 GenAI usage
-Some development tasks were assisted by GenAI (e.g. scaffolding and documentation). A small set of example chat logs is included in the report appendix (as required by the coursework brief).

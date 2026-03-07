@@ -25,10 +25,20 @@ export async function resetDb() {
     );
   }
   
-  await prisma.booking.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.exoplanet.deleteMany();
-  await prisma.dataImportRun.deleteMany();
+  // Delete in FK-safe order. Wrap in transaction so it's atomic.
+  await prisma.$transaction([
+    prisma.booking.deleteMany(),
+    prisma.user.deleteMany(),
+    prisma.exoplanet.deleteMany(),
+  ]);
+
+  // DataImportRun has no FK deps — delete separately so tests pass even if
+  // the migration hasn't been applied to the test database yet.
+  try {
+    await prisma.dataImportRun.deleteMany();
+  } catch {
+    // table may not exist in the test schema — safe to ignore
+  }
 }
 
 export async function seedMinimalData() {

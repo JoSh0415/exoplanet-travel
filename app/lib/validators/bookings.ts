@@ -1,7 +1,11 @@
 import { z } from "zod";
 
+/** Allowed booking statuses — single source of truth. */
+export const BOOKING_STATUSES = ["CONFIRMED", "CANCELLED"] as const;
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
 export const createBookingSchema = z.object({
-  planetId: z.string().min(10),
+  planetId: z.string().cuid(),
   travelClass: z
     .string()
     .trim()
@@ -17,7 +21,7 @@ export const listBookingsQuerySchema = z.object({
 export const updateBookingSchema = z
   .object({
     travelClass: z.string().trim().min(1).max(60).optional(),
-    status: z.string().trim().min(1).max(30).optional(),
+    status: z.enum(BOOKING_STATUSES).optional(),
   })
   .refine((obj) => Object.keys(obj).length > 0, {
     message: "At least one field must be provided",

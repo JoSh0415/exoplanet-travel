@@ -1,18 +1,17 @@
-import { NextResponse } from "next/server";
+import { jsonResponse } from "../../../lib/http";
 import { getSession } from "../../../lib/auth";
-import { corsHeaders } from "@/app/lib/cors";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   const session = await getSession();
 
   if (!session) {
-    return NextResponse.json(
-      { user: null },
-      { status: 200, headers: corsHeaders }
+    return jsonResponse(
+      { user: null }, { status: 200 }
     );
   }
 
-  return NextResponse.json(
+  return jsonResponse(
     {
       user: {
         id: session.userId,
@@ -20,7 +19,6 @@ export async function GET() {
         name: session.name,
         role: session.role,
       },
-    },
-    { status: 200, headers: corsHeaders }
+    }, { status: 200 }
   );
-}
+});

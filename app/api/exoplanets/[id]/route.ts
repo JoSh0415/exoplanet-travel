@@ -1,19 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "../../../lib/prisma";
-import { jsonError } from "../../../lib/http";
-import { corsHeaders } from "@/app/lib/cors";
+import { jsonError, jsonResponse } from "../../../lib/http";
+import { withErrorHandler } from "../../../lib/routeHandler";
+import { validateId } from "../../../lib/validators/common";
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
-
-export async function GET(
+export const GET = withErrorHandler(async (
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await context.params;
 
-  if (!id || id.length < 10) {
+  const idCheck = validateId(id);
+  if (!idCheck.success) {
     return jsonError(400, "VALIDATION_ERROR", "Invalid exoplanet id");
   }
 
@@ -34,5 +32,5 @@ export async function GET(
     return jsonError(404, "NOT_FOUND", "Exoplanet not found");
   }
 
-  return NextResponse.json(planet, { headers: corsHeaders });
-}
+  return jsonResponse(planet);
+});

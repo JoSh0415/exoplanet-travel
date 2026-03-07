@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server";
 import { clearSessionCookie } from "../../../lib/auth";
-import { corsHeaders } from "@/app/lib/cors";
+import { jsonResponse } from "../../../lib/http";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
-export async function POST() {
+export const POST = withErrorHandler(async () => {
   await clearSessionCookie();
 
-  return NextResponse.json(
-    { success: true },
-    { status: 200, headers: corsHeaders }
+  return jsonResponse(
+    { success: true }, { status: 200 }
   );
-}
+});

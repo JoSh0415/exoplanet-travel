@@ -7,12 +7,16 @@ const config: Config = {
   clearMocks: true,
   restoreMocks: true,
   collectCoverageFrom: [
-    "src/**/*.{ts,tsx}",
-    "app/**/*.{ts,tsx}",
+    "app/api/**/*.{ts,tsx}",
+    "app/lib/**/*.{ts,tsx}",
+    "app/middleware.ts",
     "!**/*.d.ts",
     "!**/node_modules/**",
   ],
   setupFilesAfterEnv: ["<rootDir>/__tests__/helpers/jest.setup.ts"],
+  moduleNameMapper: {
+    "^jose$": "<rootDir>/__tests__/helpers/joseMock.ts",
+  }
 };
 
 export default config;

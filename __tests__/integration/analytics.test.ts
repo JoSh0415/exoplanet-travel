@@ -1,5 +1,5 @@
 import request from "supertest";
-import { prisma, seedMinimalData } from "../helpers/db";
+import { prisma } from "../helpers/db";
 
 const BASE = "http://localhost:3000";
 

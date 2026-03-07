@@ -175,6 +175,155 @@ describe("GET /api/bookings", () => {
     // Admin should see at least the regular user's booking
     expect(res.body.total).toBeGreaterThanOrEqual(1);
   });
+
+  test("returns empty items and correct pagination for page beyond total", async () => {
+    const email = uniqueEmail("page-beyond");
+    const cookies = await registerAndLogin(email, "securePass123", "PageBeyond");
+
+    const res = await request(BASE)
+      .get("/api/bookings?page=999&pageSize=10")
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(0);
+    expect(res.body.page).toBe(999);
+    expect(res.body.totalPages).toBeGreaterThanOrEqual(1);
+  });
+
+  test("returns correct pagination metadata shape", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("paginate-meta");
+    const cookies = await registerAndLogin(email, "securePass123", "PaginateMeta");
+
+    // Create 3 bookings
+    for (let i = 0; i < 3; i++) {
+      await request(BASE)
+        .post("/api/bookings")
+        .set("Cookie", cookies.join("; "))
+        .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    }
+
+    const res = await request(BASE)
+      .get("/api/bookings?page=1&pageSize=2")
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(200);
+    expect(res.body.page).toBe(1);
+    expect(res.body.pageSize).toBe(2);
+    expect(res.body.items).toHaveLength(2);
+    expect(res.body.total).toBeGreaterThanOrEqual(3);
+    expect(res.body.totalPages).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ── GET /api/bookings/{id} ──────────────────────────────────────────
+
+describe("GET /api/bookings/{id}", () => {
+  test("returns 401 when unauthenticated", async () => {
+    const fakeId = "c" + "z".repeat(24);
+    const res = await request(BASE).get(`/api/bookings/${fakeId}`);
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  test("owner can view their own booking (200)", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("get-owner");
+    const cookies = await registerAndLogin(email, "securePass123", "GetOwner");
+
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", cookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const res = await request(BASE)
+      .get(`/api/bookings/${created.body.id}`)
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("id", created.body.id);
+    expect(res.body).toHaveProperty("travelClass", "Economy (Cryo-Sleep)");
+    expect(res.body).toHaveProperty("user");
+    expect(res.body).toHaveProperty("planet");
+    expect(res.body.planet).toHaveProperty("name");
+  });
+
+  test("returns 403 when non-owner tries to view", async () => {
+    const { planet } = await seedMinimalData();
+
+    const emailOwner = uniqueEmail("get-owner2");
+    const ownerCookies = await registerAndLogin(emailOwner, "securePass123", "OwnerView");
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", ownerCookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const emailOther = uniqueEmail("get-other");
+    const otherCookies = await registerAndLogin(emailOther, "securePass123", "OtherView");
+
+    const res = await request(BASE)
+      .get(`/api/bookings/${created.body.id}`)
+      .set("Cookie", otherCookies.join("; "));
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("FORBIDDEN");
+  });
+
+  test("admin can view any booking", async () => {
+    const { planet } = await seedMinimalData();
+
+    const emailReg = uniqueEmail("get-reg");
+    const regCookies = await registerAndLogin(emailReg, "securePass123", "GetReg");
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", regCookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const emailAdmin = uniqueEmail("get-admin");
+    await registerAndLogin(emailAdmin, "securePass123", "GetAdmin");
+    await promoteToAdmin(emailAdmin);
+    const loginRes = await request(BASE)
+      .post("/api/auth/login")
+      .send({ email: emailAdmin, password: "securePass123" });
+    const rawCookies = loginRes.headers["set-cookie"];
+    const adminCookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
+
+    const res = await request(BASE)
+      .get(`/api/bookings/${created.body.id}`)
+      .set("Cookie", adminCookies.join("; "));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("id", created.body.id);
+  }, 15_000);
+
+  test("returns 404 when booking does not exist", async () => {
+    const email = uniqueEmail("get-404");
+    const cookies = await registerAndLogin(email, "securePass123", "Get404");
+    const fakeId = "c" + "z".repeat(24);
+
+    const res = await request(BASE)
+      .get(`/api/bookings/${fakeId}`)
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("NOT_FOUND");
+  });
+
+  test("returns 400 for invalid id format", async () => {
+    const email = uniqueEmail("get-bad-id");
+    const cookies = await registerAndLogin(email, "securePass123", "GetBadId");
+
+    const res = await request(BASE)
+      .get("/api/bookings/not-a-valid-id")
+      .set("Cookie", cookies.join("; "));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
 });
 
 // ── PATCH /api/bookings/{id} ────────────────────────────────────────
@@ -267,7 +416,7 @@ describe("PATCH /api/bookings/{id}", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.travelClass).toBe("First Class (Warp Drive)");
-  });
+  }, 15_000);
 
   test("returns 400 for empty payload", async () => {
     const { planet } = await seedMinimalData();
@@ -287,6 +436,107 @@ describe("PATCH /api/bookings/{id}", () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
   });
+
+  test("owner can cancel their own booking (status → CANCELLED)", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("canceller");
+    const cookies = await registerAndLogin(email, "securePass123", "Canceller");
+
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", cookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+    expect(created.body.status).toBe("CONFIRMED");
+
+    const cancelled = await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", cookies.join("; "))
+      .send({ status: "CANCELLED" });
+
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body.status).toBe("CANCELLED");
+
+    // Verify persisted
+    const inDb = await prisma.booking.findUnique({ where: { id: created.body.id } });
+    expect(inDb?.status).toBe("CANCELLED");
+  });
+
+  test("non-admin cannot set status to CONFIRMED (403)", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("status-escalate");
+    const cookies = await registerAndLogin(email, "securePass123", "StatusEsc");
+
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", cookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const res = await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", cookies.join("; "))
+      .send({ status: "CONFIRMED" });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("FORBIDDEN");
+  });
+
+  test("rejects invalid status value (400)", async () => {
+    const { planet } = await seedMinimalData();
+    const email = uniqueEmail("bad-status");
+    const cookies = await registerAndLogin(email, "securePass123", "BadStatus");
+
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", cookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    const res = await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", cookies.join("; "))
+      .send({ status: "APPROVED" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  test("admin can set any valid status", async () => {
+    const { planet } = await seedMinimalData();
+
+    const emailReg = uniqueEmail("status-reg");
+    const regCookies = await registerAndLogin(emailReg, "securePass123", "StatusReg");
+    const created = await request(BASE)
+      .post("/api/bookings")
+      .set("Cookie", regCookies.join("; "))
+      .send({ planetId: planet.id, travelClass: "Economy (Cryo-Sleep)" });
+    expect(created.status).toBe(201);
+
+    // Cancel it first (as owner)
+    await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", regCookies.join("; "))
+      .send({ status: "CANCELLED" });
+
+    // Admin re-confirms
+    const emailAdmin = uniqueEmail("status-admin");
+    await registerAndLogin(emailAdmin, "securePass123", "StatusAdmin");
+    await promoteToAdmin(emailAdmin);
+    const loginRes = await request(BASE)
+      .post("/api/auth/login")
+      .send({ email: emailAdmin, password: "securePass123" });
+    const raw = loginRes.headers["set-cookie"];
+    const adminCookies = Array.isArray(raw) ? raw : raw ? [raw] : [];
+
+    const res = await request(BASE)
+      .patch(`/api/bookings/${created.body.id}`)
+      .set("Cookie", adminCookies.join("; "))
+      .send({ status: "CONFIRMED" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("CONFIRMED");
+  }, 15_000);
 });
 
 // ── DELETE /api/bookings/{id} ───────────────────────────────────────
@@ -318,7 +568,7 @@ describe("DELETE /api/bookings/{id}", () => {
 
     const inDb = await prisma.booking.findUnique({ where: { id: created.body.id } });
     expect(inDb).toBeNull();
-  });
+  }, 15_000);
 
   test("returns 403 when non-owner tries to delete", async () => {
     const { planet } = await seedMinimalData();

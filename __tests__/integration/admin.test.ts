@@ -1,5 +1,5 @@
 import request from "supertest";
-import { prisma, seedMinimalData } from "../helpers/db";
+import { prisma } from "../helpers/db";
 
 const BASE = "http://localhost:3000";
 
@@ -37,6 +37,7 @@ describe("POST /api/admin/refresh-exoplanets", () => {
   test("returns 403 for non-admin user", async () => {
     const email = `user-${Date.now()}@example.com`;
     const cookies = await registerAndLogin(email, "securePass123", "Regular User");
+    // cookies used below for authenticated request
 
     const res = await request(BASE)
       .post("/api/admin/refresh-exoplanets")
@@ -48,7 +49,7 @@ describe("POST /api/admin/refresh-exoplanets", () => {
 
   test("returns 200 and creates DataImportRun for admin", async () => {
     const email = `admin-${Date.now()}@example.com`;
-    const cookies = await registerAndLogin(email, "securePass123", "Admin User");
+    await registerAndLogin(email, "securePass123", "Admin User");
     await promoteToAdmin(email);
 
     // Re-login to get a fresh token with ADMIN role
@@ -100,7 +101,7 @@ describe("GET /api/admin/import-runs", () => {
 
   test("returns paginated import runs for admin", async () => {
     const email = `admin2-${Date.now()}@example.com`;
-    const cookies = await registerAndLogin(email, "securePass123", "Admin User 2");
+    await registerAndLogin(email, "securePass123", "Admin User 2");
     await promoteToAdmin(email);
 
     const loginRes = await request(BASE)

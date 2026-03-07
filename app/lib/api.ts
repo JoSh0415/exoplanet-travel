@@ -130,3 +130,134 @@ export async function deleteBooking(id: string): Promise<void> {
     throw new Error(body?.error?.message ?? `Failed to delete booking (${res.status})`);
   }
 }
+
+/* ─── Analytics types ─── */
+
+export type TopDestination = {
+  planetId: string;
+  name: string;
+  distance: number | null;
+  vibe: string | null;
+  bookings: number;
+};
+
+export type TravelClassCount = {
+  travelClass: string;
+  count: number;
+};
+
+export type PeriodCount = {
+  period: string;
+  count: number;
+};
+
+export type BookingsSummary = {
+  totalBookings: number;
+  byTravelClass: TravelClassCount[];
+  byPeriod: PeriodCount[];
+};
+
+export type VibeCount = {
+  vibe: string;
+  count: number;
+};
+
+export type VibeBooked = {
+  vibe: string;
+  bookings: number;
+};
+
+export type VibesAnalytics = {
+  vibes: VibeCount[];
+  topBooked: VibeBooked[];
+};
+
+/* ─── Analytics fetchers ─── */
+
+export async function fetchBookingsSummary(query: {
+  from?: string;
+  to?: string;
+  groupBy?: "day" | "month";
+}): Promise<BookingsSummary> {
+  const res = await fetch(`/api/analytics/bookings-summary${buildQuery(query)}`, { cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to fetch bookings summary (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function fetchTopDestinations(limit = 10): Promise<{ destinations: TopDestination[] }> {
+  const res = await fetch(`/api/analytics/top-destinations${buildQuery({ limit })}`, { cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to fetch top destinations (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function fetchVibesAnalytics(): Promise<VibesAnalytics> {
+  const res = await fetch(`/api/analytics/vibes`, { cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to fetch vibes analytics (${res.status})`);
+  }
+  return res.json();
+}
+
+/* ─── Admin types ─── */
+
+export type DataImportRun = {
+  id: string;
+  sourceName: string;
+  tapQuery: string;
+  retrievedAt: string;
+  insertedCount: number;
+  updatedCount: number;
+  errorMessage: string | null;
+  createdAt: string;
+};
+
+export type RefreshResult = {
+  message: string;
+  sourceName: string;
+  tapQuery: string;
+  retrievedAt: string;
+  insertedCount: number;
+  updatedCount: number;
+  errorMessage: string | null;
+};
+
+/* ─── Admin fetchers ─── */
+
+export async function fetchImportRuns(query: {
+  page?: number;
+  pageSize?: number;
+}): Promise<Paginated<DataImportRun>> {
+  const res = await fetch(`/api/admin/import-runs${buildQuery(query)}`, { cache: "no-store" });
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error?.message ?? (res.status === 401 ? "Authentication required" : "Admin role required"));
+    }
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to fetch import runs (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function refreshExoplanets(): Promise<RefreshResult> {
+  const res = await fetch(`/api/admin/refresh-exoplanets`, {
+    method: "POST",
+    cache: "no-store",
+  });
+  if (!res.ok && res.status !== 207) {
+    if (res.status === 401 || res.status === 403) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error?.message ?? (res.status === 401 ? "Authentication required" : "Admin role required"));
+    }
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Failed to refresh exoplanets (${res.status})`);
+  }
+  return res.json();
+}

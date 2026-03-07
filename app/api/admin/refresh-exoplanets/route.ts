@@ -1,15 +1,10 @@
-import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { getSession } from "../../../lib/auth";
-import { jsonError } from "../../../lib/http";
+import { jsonError, jsonResponse } from "../../../lib/http";
 import { importExoplanets } from "../../../lib/nasaImport";
-import { corsHeaders } from "@/app/lib/cors";
+import { withErrorHandler } from "../../../lib/routeHandler";
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
-
-export async function POST() {
+export const POST = withErrorHandler(async () => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -23,20 +18,18 @@ export async function POST() {
   const result = await importExoplanets(prisma, { limit });
 
   if (result.errorMessage) {
-    return NextResponse.json(
+    return jsonResponse(
       {
         message: "Import completed with errors",
         ...result,
-      },
-      { status: 207, headers: corsHeaders }
+      }, { status: 207 }
     );
   }
 
-  return NextResponse.json(
+  return jsonResponse(
     {
       message: "Import completed successfully",
       ...result,
-    },
-    { status: 200, headers: corsHeaders }
+    }, { status: 200 }
   );
-}
+});

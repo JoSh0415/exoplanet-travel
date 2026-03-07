@@ -33,6 +33,28 @@ export default function Navbar() {
               </svg>
               <span className="hidden sm:inline">My Trips</span>
             </Link>
+            <Link
+              href="/analytics"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-slate-500 hover:text-cyan-400 bg-white/5 border border-white/10 hover:border-cyan-500/30 rounded-lg transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 20V10" />
+                <path d="M12 20V4" />
+                <path d="M6 20v-6" />
+              </svg>
+              <span className="hidden sm:inline">Analytics</span>
+            </Link>
+            {user.role === "ADMIN" && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-amber-500/70 hover:text-amber-400 bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/30 rounded-lg transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span className="hidden sm:inline">Admin</span>
+              </Link>
+            )}
             <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-500 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-slate-300">{user.name || user.email}</span>

@@ -1,15 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "../../lib/prisma";
-import { jsonError } from "../../lib/http";
+import { jsonError, jsonResponse } from "../../lib/http";
 import { createBookingSchema, listBookingsQuerySchema } from "../../lib/validators/bookings";
-import { corsHeaders } from "@/app/lib/cors";
+import { withErrorHandler } from "../../lib/routeHandler";
 import { getSession } from "../../lib/auth";
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
-
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -53,14 +49,15 @@ export async function POST(req: NextRequest) {
       userId: true,
       planetId: true,
       travelClass: true,
+      status: true,
       bookingDate: true,
     },
   });
 
-  return NextResponse.json(booking, { status: 201, headers: corsHeaders });
-}
+  return jsonResponse(booking, { status: 201 });
+});
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const session = await getSession();
   if (!session) {
     return jsonError(401, "UNAUTHORIZED", "Authentication required");
@@ -96,6 +93,7 @@ export async function GET(req: NextRequest) {
         id: true,
         bookingDate: true,
         travelClass: true,
+        status: true,
         user: {
           select: {
             id: true,
@@ -118,11 +116,11 @@ export async function GET(req: NextRequest) {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  return NextResponse.json({
+  return jsonResponse({
     items,
     page,
     pageSize,
     total,
     totalPages,
-  }, { headers: corsHeaders });
-}
+  });
+});
