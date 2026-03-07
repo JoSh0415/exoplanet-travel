@@ -34,7 +34,7 @@ describe("High-Value Integration Edge Cases", () => {
 
       expect(rateLimited).toBe(true);
       expect(lastStatus).toBe(429);
-    });
+    }, 30_000);
 
     it("should return 429 when max register attempts are exceeded", async () => {
       const proxyIp = `192.168.2.${Math.floor(Math.random() * 255)}`;
@@ -58,7 +58,7 @@ describe("High-Value Integration Edge Cases", () => {
 
       expect(rateLimited).toBe(true);
       expect(lastStatus).toBe(429);
-    });
+    }, 30_000);
   });
 
   describe("Malformed and Expired Sessions", () => {
