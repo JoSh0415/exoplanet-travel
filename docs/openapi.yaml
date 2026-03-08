@@ -13,15 +13,14 @@ info:
       `{ "error": { "code": string, "message": string, "details"?: any } }`
   contact:
     name: API Maintainer
-    email: your-email@example.com
   license:
     name: Academic Use
 
 servers:
   - url: http://localhost:3000
     description: Local development server
-  - url: https://YOUR-DEPLOYED-URL-HERE
-    description: Deployed server (optional)
+  - url: https://exoplanet-travel.vercel.app
+    description: Deployed server
 
 tags:
   - name: Exoplanets
@@ -130,8 +129,8 @@ paths:
                 example:
                   summary: Example planet
                   value:
-                    id: cmlp9k8qn0003dskufekwmztt
-                    name: HD 219134 c
+                    id: cmlp9k8qn0000dskuetg0pq62
+                    name: HD 219134 b
                     distance: 21.3
                     temperature: 782
                     gravity: 1.91
@@ -192,7 +191,7 @@ paths:
               example:
                 summary: Create booking
                 value:
-                  planetId: cmlp...planet
+                  planetId: cmlp9k8qn0007dskuhej1ifkh
                   travelClass: Economy (Cryo-Sleep)
       responses:
         "201":
@@ -328,7 +327,7 @@ paths:
               example:
                 summary: Register a user
                 value:
-                  email: user@example.com
+                  email: jane@example.com
                   password: securePass123
                   name: Jane Doe
       responses:
@@ -384,7 +383,7 @@ paths:
               example:
                 summary: Login
                 value:
-                  email: user@example.com
+                  email: jane@example.com
                   password: securePass123
       responses:
         "200":
@@ -446,8 +445,8 @@ paths:
                   summary: Logged-in user
                   value:
                     user:
-                      id: abc123
-                      email: user@example.com
+                      id: cmlp9k8ut00dwdskud6g70sxc
+                      email: jane@example.com
                       name: Jane Doe
                       role: USER
                 unauthenticated:
@@ -561,6 +560,8 @@ paths:
                         count: 42
                       - vibe: Molten Rock
                         count: 38
+                      - vibe: Mysterious
+                        count: 25
                     topBooked:
                       - vibe: Habitable Paradise
                         bookings: 120
@@ -588,11 +589,16 @@ paths:
                   summary: Top 3 destinations
                   value:
                     destinations:
-                      - planetId: abc123
+                      - planetId: cmlp9k8qn0003dskufekwmztt
                         name: HD 219134 c
                         distance: 21.3
                         vibe: Molten Rock
                         bookings: 45
+                      - planetId: cmlp9k8qn0007dskuhej1ifkh
+                        name: Proxima Centauri b
+                        distance: 4.24
+                        vibe: Habitable Paradise
+                        bookings: 32
         "400":
           $ref: "#/components/responses/BadRequest"
 
