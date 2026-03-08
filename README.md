@@ -4,66 +4,93 @@
 
 A data-driven web API and dashboard for booking interstellar travel, powered by NASA's Exoplanet Archive TAP service.
 
+**Live deployment:** <https://exoplanet-travel.vercel.app>
+
 ---
 
 ## 🚀 Overview
 This project provides:
 - A **REST API** for browsing a catalogue of exoplanet destinations.
-- Full **CRUD booking management** (create/list/update/delete bookings).
+- Full **CRUD booking management** (create/list/read/update/delete bookings).
 - A reproducible **data integration pipeline** that seeds the database from the NASA Exoplanet Archive (TAP sync).
+- An **analytics dashboard** with interactive charts and statistics.
 
 ---
 
 ## 🛠️ Tech Stack
-- **Framework:** Next.js (App Router)
+- **Runtime:** Node.js 20+
+- **Framework:** Next.js 16 (App Router)
 - **Backend:** Next.js Route Handlers (`/app/api/*`)
 - **Database:** PostgreSQL via Prisma ORM
+- **Auth:** JWT session cookies (httpOnly)
+- **Validation:** Zod
 - **API Style:** REST (JSON)
 - **Data Source:** Caltech/NASA Exoplanet Archive TAP service (`/TAP/sync`)
+- **CI:** GitHub Actions (lint → typecheck → build → test)
 
 ---
 
 ## 📦 Setup (Local)
 
 ### 1) Install dependencies
-    npm install
+```bash
+npm install
+```
 
 ### 2) Configure environment variables
 Copy the example file and fill in your values:
 
-    cp .env.example .env
+```bash
+cp .env.example .env
+```
 
 Then edit `.env` with your database credentials and a random JWT secret. See `.env.example` for all required variables.
 
 ### 3) Run database migrations
-    npx prisma migrate dev
+```bash
+npx prisma migrate dev
+```
 
 ### 4) Seed the database
 This project seeds exoplanets from the NASA TAP endpoint and inserts some sample users + bookings.
 
-    npx prisma db seed
+```bash
+npx prisma db seed
+```
 
 ### 5) Start the dev server
-    npm run dev
+```bash
+npm run dev
+```
 
 Base URL (local):
-    http://localhost:3000
+```text
+http://localhost:3000
+```
 
 ---
 
 ## 🧪 Quick API sanity checks
 
 List exoplanets (paged):
-    `curl -s "http://localhost:3000/api/exoplanets?page=1&pageSize=20" | jq`
+```bash
+curl -s "http://localhost:3000/api/exoplanets?page=1&pageSize=20" | jq
+```
 
 Search by name:
-    `curl -s "http://localhost:3000/api/exoplanets?q=gliese" | jq`
+```bash
+curl -s "http://localhost:3000/api/exoplanets?q=gliese" | jq
+```
 
 Filter by vibe:
-    `curl -s "http://localhost:3000/api/exoplanets?vibe=Molten%20Rock" | jq`
+```bash
+curl -s "http://localhost:3000/api/exoplanets?vibe=Molten%20Rock" | jq
+```
 
-List bookings:
-    `curl -s "http://localhost:3000/api/bookings?page=1&pageSize=10" | jq`
+List bookings (requires login — use `-b cookies.txt` after logging in):
+```bash
+curl -s -b cookies.txt "http://localhost:3000/api/bookings?page=1&pageSize=10" | jq
+```
 
 ---
 
@@ -79,23 +106,35 @@ To prevent accidentally modifying the development database, tests use a dedicate
 
 In your `.env`, set:
 
-    TEST_DATABASE_URL="postgresql://.../test_db?schema=test"
+```bash
+TEST_DATABASE_URL="postgresql://.../test_db?schema=test"
+```
 
 The test setup requires `TEST_DATABASE_URL` and will refuse to run destructive DB resets without it.
 
 ### Run integration tests (recommended)
 1) Start the API using the **test database**:
-    `npm run test:server`
+```bash
+npm run test:server
+```
 
 2) In another terminal, run the tests:
-    `npm test`
+```bash
+npm test
+```
 
 ### Coverage
-    npm run test:coverage
+```bash
+npm run test:coverage
+```
 
 ---
 
 ## 🔌 API Endpoints (Current)
+
+### Health
+- `GET /api/health`  
+  Returns API status, database connectivity, and uptime.
 
 ### Exoplanets
 - `GET /api/exoplanets`  
@@ -110,6 +149,9 @@ The test setup requires `TEST_DATABASE_URL` and will refuse to run destructive D
 
 - `GET /api/bookings`  
   Paginated list; optional filter `userId`. Admins can see all bookings.
+
+- `GET /api/bookings/{id}`  
+  Fetch a single booking by id (owner or admin only)
 
 - `PATCH /api/bookings/{id}`  
   Partial update (supports `travelClass`, `status`)
@@ -159,9 +201,6 @@ Navigate to **`/analytics`** (requires login) to view an interactive dashboard w
 
 ## 📚 API Documentation
 
-### Interactive (Swagger UI)
-Start the dev server and navigate to **`/swagger/`** for interactive API exploration powered by Swagger UI.
-
 ### Required PDF (submission artifact)
 - **PDF:** `docs/api.pdf`
 
@@ -175,11 +214,15 @@ Start the dev server and navigate to **`/swagger/`** for interactive API explora
 
 This project uses Pandoc for reliable page breaks in the PDF.
 
-1) Install Pandoc:
-    `brew install pandoc`
+1) Install Pandoc (with a LaTeX engine):
+```bash
+brew install pandoc mactex-no-gui
+```
 
 2) Build the PDF:
-    `pandoc docs/api.md -o docs/api.pdf`
+```bash
+npm run docs:pdf
+```
 
 ---
 
