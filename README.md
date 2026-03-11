@@ -1,4 +1,4 @@
-# 🪐 Exoplanet Travel Bureau
+# 🪐 Exoplanet Travel Agency
 **Module:** COMP3011 Web Services and Web Data  
 **Student ID:** 201622115
 

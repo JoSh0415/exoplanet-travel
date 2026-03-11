@@ -54,7 +54,7 @@ export default function Home() {
             </span>
             <br />
             <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 bg-clip-text text-transparent">
-              Travel Bureau
+              Travel Agency
             </span>
           </h1>
           <p className="mt-6 text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
