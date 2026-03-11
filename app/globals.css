@@ -15,11 +15,13 @@
 
 html {
   scroll-behavior: smooth;
+  /* Fallback before canvas renders */
+  background: #020308;
 }
 
 body {
   margin: 0;
-  background: #06070a;
+  background: transparent;
   color: #e8eaf0;
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;

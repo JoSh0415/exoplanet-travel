@@ -108,7 +108,7 @@ export default function BookingDetailPage({ id }: { id: string }) {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#06070a]">
+      <div className="min-h-screen">
         <Navbar />
         <div className="flex items-center justify-center py-32">
           <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
@@ -119,7 +119,7 @@ export default function BookingDetailPage({ id }: { id: string }) {
 
   if (error && !booking) {
     return (
-      <div className="min-h-screen bg-[#06070a]">
+      <div className="min-h-screen">
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 py-20 text-center">
           <div className="text-4xl mb-4">❌</div>
@@ -141,12 +141,7 @@ export default function BookingDetailPage({ id }: { id: string }) {
   const currentStatus = STATUS_OPTIONS.find((s) => s.value === (booking.status ?? "CONFIRMED")) ?? STATUS_OPTIONS[0];
 
   return (
-    <div className="min-h-screen bg-[#06070a] relative overflow-hidden">
-      {/* Background effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/3 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen relative overflow-hidden">
 
       <Navbar />
 

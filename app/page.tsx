@@ -39,17 +39,6 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* starfield background */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.15),transparent)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(56,189,248,0.06),transparent_50%)]" />
-        <div className="absolute top-1/4 left-1/3 w-1 h-1 rounded-full bg-white/60 animate-pulse" />
-        <div className="absolute top-1/3 right-1/4 w-0.5 h-0.5 rounded-full bg-white/40 animate-pulse [animation-delay:1s]" />
-        <div className="absolute top-2/3 left-1/5 w-0.5 h-0.5 rounded-full bg-cyan-400/40 animate-pulse [animation-delay:2s]" />
-        <div className="absolute top-1/2 right-1/3 w-1 h-1 rounded-full bg-purple-400/30 animate-pulse [animation-delay:0.5s]" />
-        <div className="absolute bottom-1/4 left-2/3 w-0.5 h-0.5 rounded-full bg-white/50 animate-pulse [animation-delay:1.5s]" />
-      </div>
-
       <Navbar />
 
       <main className="relative z-10 max-w-5xl mx-auto px-6 pb-24">

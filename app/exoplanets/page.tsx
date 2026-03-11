@@ -224,12 +224,11 @@ function ExoplanetsContent() {
   const activeFilterCount = [form.q, form.vibe, form.minDistance !== "" ? form.minDistance : "", form.maxDistance !== "" ? form.maxDistance : ""].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-[#050510] text-slate-200 font-sans selection:bg-cyan-500/30 overflow-x-hidden relative">
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,24,39,1),rgba(5,5,16,1))]"></div>
-        <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-indigo-900/20 to-transparent opacity-30"></div>
-        <div className="absolute bottom-0 left-0 right-0 h-[500px] bg-gradient-to-t from-cyan-900/10 to-transparent opacity-20"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_70%)]"></div>
+    <div className="min-h-screen text-slate-200 font-sans selection:bg-cyan-500/30 overflow-x-hidden relative">
+      {/* Subtle tinted overlays on top of global starfield */}
+      <div className="fixed inset-0 z-[1] pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-indigo-900/15 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-[500px] bg-gradient-to-t from-cyan-900/8 to-transparent"></div>
       </div>
 
       <Navbar />

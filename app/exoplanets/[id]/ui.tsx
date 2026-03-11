@@ -227,7 +227,7 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050510] text-slate-200 flex items-center justify-center">
+      <div className="min-h-screen text-slate-200 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin"></div>
           <div className="text-sm text-slate-500 font-mono animate-pulse">ACQUIRING SIGNAL...</div>
@@ -238,7 +238,7 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
 
   if (err || !planet) {
     return (
-      <div className="min-h-screen bg-[#050510] text-slate-200 flex items-center justify-center p-6">
+      <div className="min-h-screen text-slate-200 flex items-center justify-center p-6">
         <div className="max-w-md w-full rounded-2xl bg-red-500/10 border border-red-500/20 p-8 text-center backdrop-blur-sm">
           <div className="text-5xl mb-4">🛸</div>
           <div className="text-red-400 font-mono font-bold text-lg mb-2">SIGNAL LOST</div>
@@ -261,13 +261,11 @@ export default function ExoplanetDetailsClient({ id }: { id: string }) {
   const estimatedTravel = travelTime(planet.distance, travelClass);
 
   return (
-    <div className="min-h-screen bg-[#050510] text-slate-200 font-sans selection:bg-cyan-500/30 overflow-x-hidden relative">
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,24,39,1),rgba(5,5,16,1))]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_70%)]"></div>
-      </div>
-
-      <div className={`fixed inset-0 z-0 pointer-events-none opacity-30 bg-gradient-to-br ${vc.bg}`}></div>
+    <div className="min-h-screen text-slate-200 font-sans selection:bg-cyan-500/30 overflow-x-hidden relative">
+      {/* Vibe-tinted nebula overlay — sits above global starfield (z-0), below content */}
+      <div className={`fixed inset-0 z-[1] pointer-events-none opacity-40 bg-gradient-to-br ${vc.bg} transition-all duration-1000`}></div>
+      {/* Subtle grid gives depth without hiding stars */}
+      <div className="fixed inset-0 z-[1] pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_70%)]"></div>
 
       <Navbar />
 
