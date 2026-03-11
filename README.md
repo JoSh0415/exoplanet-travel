@@ -202,7 +202,7 @@ Navigate to **`/analytics`** (requires login) to view an interactive dashboard w
 ## 📚 API Documentation
 
 ### Required PDF (submission artifact)
-- **PDF:** `docs/api.pdf`
+- **PDF:** [docs/api.pdf](docs/api.pdf)
 
 ### Source files
 - **PDF source (Markdown):** `docs/api.md`  

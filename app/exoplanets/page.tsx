@@ -93,29 +93,6 @@ function formatDistance(d: number) {
   return d.toFixed(1);
 }
 
-function _tempLabel(k: number | null | undefined) {
-  if (k == null) return null;
-  if (k < 200) return "Freezing";
-  if (k < 280) return "Cold";
-  if (k < 310) return "Mild";
-  if (k < 400) return "Warm";
-  if (k < 700) return "Hot";
-  return "Extreme";
-}
-
-function _gravLabel(g: number | null | undefined) {
-  if (g == null) return null;
-  if (g < 0.5) return "Micro";
-  if (g < 0.9) return "Low";
-  if (g < 1.2) return "Earth-like";
-  if (g < 2) return "Strong";
-  if (g < 5) return "Intense";
-  return "Crushing";
-}
-
-void _tempLabel;
-void _gravLabel;
-
 export default function ExoplanetsPage() {
   return (
     <Suspense fallback={
@@ -400,7 +377,7 @@ function ExoplanetsContent() {
           <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4 px-2">
              <div className="text-sm font-mono text-slate-500">
                 <span className="text-cyan-400 font-bold">{data.total}</span> SIGNALS DETECTED
-                {form.q && <span className="ml-2 text-slate-600">{/* QUERY: */}&quot;{form.q}&quot;</span>}
+                {form.q && <span className="ml-2 text-slate-600">&quot;{form.q}&quot;</span>}
              </div>
              <div className="flex items-center gap-4 text-xs font-mono text-slate-600 bg-slate-900/50 px-3 py-1.5 rounded-full border border-white/5">
                 <span>PAGE {data.page} / {data.totalPages}</span>
