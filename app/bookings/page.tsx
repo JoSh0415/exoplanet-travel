@@ -74,16 +74,16 @@ export default function BookingsPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#06070a] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#06070a] relative overflow-hidden">
-      {/* Background effects */}
-      <div className="fixed inset-0 pointer-events-none">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Accent glows above global starfield */}
+      <div className="fixed inset-0 z-[1] pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
       </div>

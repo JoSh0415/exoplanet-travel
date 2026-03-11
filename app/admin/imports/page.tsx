@@ -146,11 +146,7 @@ export default function AdminImportsPage() {
   /* Forbidden check */
   if (!authLoading && user && user.role !== "ADMIN") {
     return (
-      <div className="min-h-screen bg-[#06070a] relative overflow-hidden">
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-rose-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
-        </div>
+      <div className="min-h-screen relative overflow-hidden">
         <Navbar />
         <main className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-4">
           <div className="rounded-2xl bg-white/[0.03] border border-rose-500/20 p-10 text-center max-w-md">
@@ -190,7 +186,7 @@ export default function AdminImportsPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#06070a] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -199,12 +195,7 @@ export default function AdminImportsPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#06070a] relative overflow-hidden">
-      {/* Background effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen relative overflow-hidden">
 
       <Navbar />
 

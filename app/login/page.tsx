@@ -53,7 +53,7 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050510] text-slate-200 flex items-center justify-center">
+      <div className="min-h-screen text-slate-200 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
           <div className="text-sm text-slate-500 font-mono animate-pulse">INITIALIZING...</div>
@@ -65,35 +65,7 @@ export default function LoginPage() {
   if (user) return null;
 
   return (
-    <div className="min-h-screen bg-[#050510] text-slate-200 font-sans selection:bg-cyan-500/30 overflow-hidden relative flex items-center justify-center p-4">
-      {/* Background effects */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,24,39,1),rgba(5,5,16,1))]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_70%)]" />
-      </div>
-
-      {/* Ambient glow */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-500/10 rounded-full blur-[100px] animate-pulse [animation-delay:1s]" />
-      </div>
-
-      {/* Star particles */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 50 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-[2px] h-[2px] bg-white rounded-full animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 3}s`,
-              opacity: 0.2 + Math.random() * 0.5,
-            }}
-          />
-        ))}
-      </div>
+    <div className="min-h-screen text-slate-200 font-sans selection:bg-cyan-500/30 overflow-hidden relative flex items-center justify-center p-4">
 
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
         {/* Logo / brand */}
