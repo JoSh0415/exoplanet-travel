@@ -2,9 +2,11 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 
-const rawSecret = process.env.JWT_SECRET;
-if (!rawSecret) throw new Error("JWT_SECRET environment variable is not set");
-const JWT_SECRET = new TextEncoder().encode(rawSecret);
+function getJwtSecret(): Uint8Array {
+  const rawSecret = process.env.JWT_SECRET;
+  if (!rawSecret) throw new Error("JWT_SECRET environment variable is not set");
+  return new TextEncoder().encode(rawSecret);
+}
 
 const COOKIE_NAME = "exo-session";
 
@@ -31,14 +33,14 @@ export async function createToken(payload: SessionPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifyToken(
   token: string
 ): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload as unknown as SessionPayload;
   } catch {
     return null;

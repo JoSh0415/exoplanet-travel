@@ -18,6 +18,7 @@ jobs:
       DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
       TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
       DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
       REFRESH_PLANET_LIMIT: "5"
 
     steps:
@@ -52,8 +53,8 @@ jobs:
 
       - name: Start server (test DB)
         run: |
-          npm run test:server &
-          npx wait-on 'http://localhost:3000/api/exoplanets?page=1&pageSize=1'
+          npm run start &
+          npx wait-on --timeout 60000 'http://localhost:3000/api/exoplanets?page=1&pageSize=1'
 
       - name: Run tests
         run: npm test

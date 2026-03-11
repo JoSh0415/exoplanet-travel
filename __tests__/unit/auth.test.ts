@@ -3,9 +3,7 @@ import { createToken, verifyToken } from "../../app/lib/auth";
 import { SignJWT } from "jose";
 import type { JWTPayload } from "jose";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "exoplanet-travel-secret-key-change-in-production"
-);
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 
 describe("Auth Utilities", () => {
   describe("Password Hashing", () => {

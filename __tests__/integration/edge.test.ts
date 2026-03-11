@@ -74,9 +74,7 @@ describe("High-Value Integration Edge Cases", () => {
     });
 
     it("should gracefully treat the session as null for GET /api/auth/me when token is expired", async () => {
-      const JWT_SECRET = new TextEncoder().encode(
-        process.env.JWT_SECRET || "exoplanet-travel-secret-key-change-in-production"
-      );
+      const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
       
       const expiredToken = await new SignJWT({ userId: "123", role: "USER", email: "expired@test.com" })
         .setProtectedHeader({ alg: "HS256" })
